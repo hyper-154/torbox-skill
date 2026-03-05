@@ -1,0 +1,1063 @@
+{
+  "/v1/api/stream/createstream": {
+    "get": {
+      "tags": [
+        "stream"
+      ],
+      "summary": "Create Stream",
+      "description": "Creates a stream from a TorBox item. Requires API key.",
+      "operationId": "create_stream_v1_api_stream_createstream_get",
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "title": "Id"
+          }
+        },
+        {
+          "name": "file_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 0,
+            "title": "File Id"
+          }
+        },
+        {
+          "name": "type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "torrent",
+            "title": "Type"
+          }
+        },
+        {
+          "name": "chosen_subtitle_index",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": "null",
+            "title": "Chosen Subtitle Index"
+          }
+        },
+        {
+          "name": "chosen_audio_index",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 0,
+            "title": "Chosen Audio Index"
+          }
+        },
+        {
+          "name": "chosen_resolution_index",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": "null",
+            "title": "Chosen Resolution Index"
+          }
+        },
+        {
+          "name": "scrobbling_enabled",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": true,
+            "title": "Scrobbling Enabled"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/stream/getstreamdata": {
+    "get": {
+      "tags": [
+        "stream"
+      ],
+      "summary": "Get Stream Data",
+      "description": "Gets stream data using a file_token and presigned token. Requires API key.",
+      "operationId": "get_stream_data_v1_api_stream_getstreamdata_get",
+      "parameters": [
+        {
+          "name": "token",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        {
+          "name": "presigned_token",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Presigned Token"
+          }
+        },
+        {
+          "name": "chosen_subtitle_index",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": "null",
+            "title": "Chosen Subtitle Index"
+          }
+        },
+        {
+          "name": "chosen_audio_index",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 0,
+            "title": "Chosen Audio Index"
+          }
+        },
+        {
+          "name": "chosen_resolution_index",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": "null",
+            "title": "Chosen Resolution Index"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/oauth/me": {
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Get Oauth Integrations",
+      "description": "Get OAuth integrations for the authenticated user.",
+      "operationId": "get_oauth_integrations_v1_api_integration_oauth_me_get",
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/oauth/{provider}": {
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Oauth Redirect",
+      "description": "Redirects to the OAuth provider for authentication.",
+      "operationId": "oauth_redirect_v1_api_integration_oauth__provider__get",
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Provider"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/oauth/{provider}/callback": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Oauth Callback",
+      "description": "Callback URL for OAuth provider.",
+      "operationId": "oauth_callback_v1_api_integration_oauth__provider__callback_post",
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Provider"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Oauth Callback",
+      "description": "Callback URL for OAuth provider.",
+      "operationId": "oauth_callback_v1_api_integration_oauth__provider__callback_post",
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Provider"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/oauth/{provider}/success": {
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Oauth Success",
+      "description": "Provides token after successful OAuth authentication.",
+      "operationId": "oauth_success_v1_api_integration_oauth__provider__success_get",
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Provider"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/googledrive": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Add To Google Drive",
+      "description": "Uploads a file or zip to Google Drive. Requires API key and Google Drive Oauth token.",
+      "operationId": "add_to_google_drive_v1_api_integration_googledrive_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddToGoogleDrive"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/dropbox": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Add To Dropbox",
+      "description": "Uploads a file or zip to Dropbox. Requires API key and Dropbox Oauth token.",
+      "operationId": "add_to_dropbox_v1_api_integration_dropbox_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddToDropbox"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/onedrive": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Add To Onedrive",
+      "description": "Uploads a file or zip to Onedrive. Requires API key and Onedrive Oauth token.",
+      "operationId": "add_to_onedrive_v1_api_integration_onedrive_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddToOnedrive"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/gofile": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Add To Gofile",
+      "description": "Uploads a file or zip to Gofile. Requires API key, and optional Gofile API token.",
+      "operationId": "add_to_gofile_v1_api_integration_gofile_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddToGofile"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/1fichier": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Add To 1Fichier",
+      "description": "Uploads a file or zip to 1Fichier. Requires API key, and optional 1Fichier API token.",
+      "operationId": "add_to_1fichier_v1_api_integration_1fichier_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddTo1Fichier"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/pixeldrain": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Add To Pixeldrain",
+      "description": "Uploads a file or zip to Pixeldrain.",
+      "operationId": "add_to_pixeldrain_v1_api_integration_pixeldrain_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddToPixeldrain"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/job/{job_id}": {
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Get Job Status",
+      "description": "Get the status of a transfer.",
+      "operationId": "get_job_status_v1_api_integration_job__job_id__get",
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "job_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "title": "Job Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Cancel Job",
+      "description": "Cancels a transfer job.",
+      "operationId": "cancel_job_v1_api_integration_job__job_id__delete",
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "job_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "title": "Job Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/jobs": {
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Get All Jobs",
+      "description": "Get all active transfers.",
+      "operationId": "get_all_jobs_v1_api_integration_jobs_get",
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again."
+        }
+      },
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ]
+    }
+  },
+  "/v1/api/integration/jobs/{hash}": {
+    "get": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Get Job By Hash",
+      "description": "Get all active transfers by hash.",
+      "operationId": "get_job_by_hash_v1_api_integration_jobs__hash__get",
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "hash",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Hash"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/oauth/{provider}/register": {
+    "post": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Oauth Register",
+      "description": "Registers a new OAuth link with the specified provider.",
+      "operationId": "oauth_register_v1_api_integration_oauth__provider__register_post",
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Provider"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OAuthRegisterRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v1/api/integration/oauth/{provider}/unregister": {
+    "delete": {
+      "tags": [
+        "integration"
+      ],
+      "summary": "Oauth Unregister",
+      "description": "Unregisters an OAuth link with the specified provider.",
+      "operationId": "oauth_unregister_v1_api_integration_oauth__provider__unregister_delete",
+      "security": [
+        {
+          "OAuth2PasswordBearer": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Provider"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "404": {
+          "success": false,
+          "error": "ENDPOINT_NOT_FOUND",
+          "detail": "Endpoint not found. Please check the URL and try again.",
+          "description": "Not Found"
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -223,7 +223,8 @@ def cmd_usenet_create(args):
     """Create a usenet download."""
     data = {
         "as_queued": args.queued,
-        "add_only_if_cached": args.cached_only
+        "add_only_if_cached": args.cached_only,
+        "post_processing": args.post_processing
     }
     if args.link:
         data["link"] = args.link
@@ -309,7 +310,7 @@ def main():
     torrents_create.add_argument("--magnet", help="Magnet link")
     torrents_create.add_argument("--file", help="Torrent file path")
     torrents_create.add_argument("--name", help="Custom name")
-    torrents_create.add_argument("--seed", type=int, help="Seed ratio")
+    torrents_create.add_argument("--seed", type=int, help="Seed setting (1=Auto, 2=Always, 3=Never)")
     torrents_create.add_argument("--allow-zip", action="store_true", default=True)
     torrents_create.add_argument("--queued", action="store_true", help="Add to queue")
     torrents_create.add_argument("--cached-only", action="store_true", help="Only if cached")
@@ -391,6 +392,7 @@ def main():
     usenet_create.add_argument("--file", help="NZB file path")
     usenet_create.add_argument("--name", help="Custom name")
     usenet_create.add_argument("--password", help="Password")
+    usenet_create.add_argument("--post-processing", type=int, default=-1, help="Post-processing (-1=Default, 0=None, 1=Repair, 2=Unpack, 3=Delete)")
     usenet_create.add_argument("--queued", action="store_true")
     usenet_create.add_argument("--cached-only", action="store_true")
     usenet_create.set_defaults(func=cmd_usenet_create)

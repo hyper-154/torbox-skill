@@ -1,0 +1,356 @@
+{
+  "AddToGoogleDrive": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Id"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "File Id"
+      },
+      "zip": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Zip",
+        "default": false
+      },
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type",
+        "default": "torrent"
+      },
+      "google_token": {
+        "type": "string",
+        "title": "Google Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "google_token"
+    ],
+    "title": "AddToGoogleDrive"
+  },
+  "AddToDropbox": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Id"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "File Id"
+      },
+      "zip": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Zip",
+        "default": false
+      },
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type",
+        "default": "torrent"
+      },
+      "dropbox_token": {
+        "type": "string",
+        "title": "Dropbox Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "dropbox_token"
+    ],
+    "title": "AddToDropbox"
+  },
+  "AddToOnedrive": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Id"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "File Id"
+      },
+      "zip": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Zip",
+        "default": false
+      },
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type",
+        "default": "torrent"
+      },
+      "onedrive_token": {
+        "type": "string",
+        "title": "Onedrive Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "onedrive_token"
+    ],
+    "title": "AddToOnedrive"
+  },
+  "AddToGofile": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Id"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "File Id"
+      },
+      "zip": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Zip",
+        "default": false
+      },
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type",
+        "default": "torrent"
+      },
+      "gofile_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Gofile Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "title": "AddToGofile"
+  },
+  "AddTo1Fichier": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Id"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "File Id"
+      },
+      "zip": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Zip",
+        "default": false
+      },
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type",
+        "default": "torrent"
+      },
+      "onefichier_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Onefichier Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "title": "AddTo1Fichier"
+  },
+  "AddToPixeldrain": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Id"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "File Id"
+      },
+      "zip": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Zip",
+        "default": false
+      },
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type",
+        "default": "torrent"
+      },
+      "pixeldrain_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Pixeldrain Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "title": "AddToPixeldrain"
+  },
+  "OAuthRegisterRequest": {
+    "properties": {
+      "token": {
+        "type": "string",
+        "title": "Token"
+      },
+      "refresh_token": {
+        "type": "string",
+        "title": "Refresh Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "token",
+      "refresh_token"
+    ],
+    "title": "OAuthRegisterRequest"
+  }
+}
