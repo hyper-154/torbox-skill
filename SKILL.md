@@ -7,6 +7,52 @@ description: Interact with Torbox API for torrents, Usenet, web downloads, searc
 
 Pure HTTP API for managing torrents, Usenet, web downloads, search engines, streaming, and cloud integrations through Torbox. No SDK dependencies required.
 
+---
+
+## What is Torbox?
+
+**Torbox is a debrid service** that downloads content on behalf of users and makes it available for direct download or streaming.
+
+### Core Functionality
+
+| Feature | Description |
+|---------|-------------|
+| **Torrent Caching** | Add a magnet link or .torrent file. Torbox downloads it to their servers. You download directly from Torbox's CDN (not P2P). |
+| **Usenet Downloads** | (Pro only) Download NZB files from Usenet servers. |
+| **Web Downloads** | Debrid direct download URLs from supported file hosters. |
+| **Streaming** | Stream video files directly in browser (Pro Web Player) or via API. |
+| **Cloud Uploads** | Automatically upload completed downloads to Google Drive, Dropbox, etc. |
+| **RSS Automation** | Auto-download from RSS feeds (torrent sites, Usenet indexers). |
+
+### Key Concepts
+
+**Caching:** When you add a torrent, Torbox checks if it's already cached (pre-downloaded by another user). Cached downloads are instant. Non-cached downloads take time to fetch from the swarm.
+
+**Debrid:** Instead of downloading P2P (BitTorrent) yourself, Torbox does it for you. You get a clean HTTP/HTTPS download link from their CDN.
+
+**Concurrent Slots:** Maximum simultaneous active downloads. Free=1, Essential=3, Standard=5, Pro=10. Additional downloads are queued.
+
+**Seed Time:** How long Torbox seeds the torrent after downloading. Essential=24h, Standard=14d, Pro=30d.
+
+**API Access:** Free plan has NO API access. Essential+ required to use this skill.
+
+### Basic Workflow
+
+1. **Add Content:** Send magnet/NZB/URL to Torbox via API
+2. **Wait/Download:** Torbox fetches the content (instant if cached)
+3. **Get Download Link:** Request CDN link when ready
+4. **Download:** Download directly from Torbox's CDN
+
+### Important Constraints
+
+- **Free Plan:** 10 downloads/month, NO API access, no Usenet, no Web Player
+- **Essential/Standard:** API access, NO Usenet, NO Web Player
+- **Pro:** Full access including Usenet and Web Player streaming
+- **Max File Sizes:** Free=10GB, Essential/Standard=200GB, Pro=1TB
+- **Rate Limits:** Respect API limits; abusive use may result in bans
+
+---
+
 ## ⚡ Quick Routing Guide
 
 **Load the appropriate section based on your task:**
