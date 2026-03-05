@@ -15,151 +15,561 @@ https://api.torbox.app
 
 ## Authentication
 
-All endpoints require an API key via Bearer token:
+All authenticated endpoints require an API key via Bearer token:
 
 ```bash
 Authorization: Bearer <YOUR_API_KEY>
 ```
 
-For unauthenticated endpoints (status, stats), no token is needed.
+For unauthenticated endpoints (status, stats, changelogs), no token is needed.
 
-## Core Services
+## Official SDKs
 
-### 1. User Management
+### Python SDK
+```bash
+pip install torbox_api
+```
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/user/me` | GET | Get user info |
-| `/v1/api/user/refreshtoken` | POST | Refresh API token |
-| `/v1/api/user/addreferral` | POST | Add referral code |
-| `/v1/api/user/referraldata` | GET | Get referral data |
-| `/v1/api/user/subscriptions` | GET | Get subscriptions |
-| `/v1/api/user/transactions` | GET | Get transactions |
+```python
+from torbox_api import TorboxApi
 
-### 2. Torrents
+sdk = TorboxApi(
+    access_token="YOUR_ACCESS_TOKEN",
+    base_url="https://api.torbox.app",
+    timeout=10000
+)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/torrents/createtorrent` | POST | Create from magnet/file |
-| `/v1/api/torrents/asynccreatetorrent` | POST | Async create |
-| `/v1/api/torrents/controltorrent` | POST | Control (pause/resume/delete) |
-| `/v1/api/torrents/mylist` | GET | List torrents |
-| `/v1/api/torrents/checkcached` | POST/GET | Check cache status |
-| `/v1/api/torrents/requestdl` | GET | Request download link |
-| `/v1/api/torrents/torrentinfo` | POST/GET | Get torrent info |
-| `/v1/api/torrents/edittorrent` | PUT | Edit torrent metadata |
+# Get API status
+result = sdk.general.get_up_status()
+print(result)
 
-**Create Torrent Body (multipart/form-data):**
-- `magnet` - Magnet link (optional)
-- `file` - .torrent file (optional)
-- `seed` - Seed ratio (optional)
-- `allow_zip` - Allow zip output (default: true)
-- `name` - Custom name (optional)
-- `as_queued` - Add to queue (default: false)
-- `add_only_if_cached` - Only add if cached (default: false)
+# Update token later
+sdk.set_access_token("NEW_TOKEN")
+```
 
-**Control Torrent Body:**
+### JavaScript/TypeScript SDK
+```bash
+npm install @torbox/torbox-api
+# or
+pnpm install @torbox/torbox-api
+```
+
+```typescript
+import { TorboxApi } from '@torbox/torbox-api';
+
+const sdk = new TorboxApi({
+  token: 'YOUR_TOKEN',
+  baseUrl: 'https://api.torbox.app'
+});
+
+// Get API status
+const { data } = await sdk.general.getUpStatus();
+console.log(data);
+```
+
+## Services Overview
+
+| Service | Description |
+|---------|-------------|
+| **General** | API status, stats, changelogs, speedtest |
+| **Torrents** | Create, control, list, check cache, download torrents |
+| **Usenet** | Create, control, list, check cache NZB downloads |
+| **Web Downloads** | Create, control, list web downloads, get hoster list |
+| **Queued** | Manage queued downloads |
+| **User** | User info, referrals, subscriptions, transactions |
+| **RSS** | Manage RSS feeds |
+| **Integrations** | Upload to cloud storage (Google Drive, Dropbox, etc.) |
+| **Notifications** | Get and clear notifications |
+
+---
+
+## General Service
+
+Unauthenticated endpoints for API health and info.
+
+### Get API Status
+```bash
+GET /
+```
+
+```python
+result = sdk.general.get_up_status()
+```
+
+```typescript
+const { data } = await sdk.general.getUpStatus();
+```
+
+### Get Stats
+```bash
+GET /v1/api/stats
+GET /v1/api/stats/30days
+```
+
+### Get Changelogs
+```bash
+GET /v1/api/changelogs/rss     # RSS format
+GET /v1/api/changelogs/json    # JSON format
+```
+
+### Speedtest Files
+```bash
+GET /v1/api/speedtest?test_length=short&region=all
+```
+
+Parameters:
+- `test_length`: `short` or `long`
+- `region`: CDN region (omit to get all available)
+
+---
+
+## Torrents Service
+
+### Create Torrent
+Creates a torrent from magnet link or torrent file.
+
+```bash
+POST /v1/api/torrents/createtorrent
+Content-Type: multipart/form-data
+```
+
+**Parameters:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `magnet` | string | Magnet link (optional if file provided) |
+| `file` | file | .torrent file (optional if magnet provided) |
+| `seed` | integer | Seed ratio limit (optional) |
+| `allow_zip` | boolean | Allow zip output (default: true) |
+| `name` | string | Custom name (optional) |
+| `as_queued` | boolean | Add to queue (default: false) |
+| `add_only_if_cached` | boolean | Only add if cached (default: false) |
+
+```python
+# Using magnet
+result = sdk.torrents.create_torrent(magnet="magnet:?xt=urn:btih:...")
+
+# Using file
+with open("file.torrent", "rb") as f:
+    result = sdk.torrents.create_torrent(file=f)
+```
+
+```typescript
+const { data } = await sdk.torrents.createTorrent({
+  magnet: 'magnet:?xt=urn:btih:...'
+});
+```
+
+**Async version:** `POST /v1/api/torrents/asynccreatetorrent` (returns immediately, processes in background)
+
+### Control Torrent
+
+```bash
+POST /v1/api/torrents/controltorrent
+```
+
+**Operations:** `reannounce`, `delete`, `resume`
+
 ```json
 {
-  "operation": "delete" | "pause" | "resume",
+  "operation": "delete",
   "torrent_id": 123,
   "all": false
 }
 ```
 
-### 3. Usenet Downloads
+```python
+result = sdk.torrents.control_torrent(
+    operation="delete",
+    torrent_id=123
+)
+```
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/usenet/createusenetdownload` | POST | Create from NZB/link |
-| `/v1/api/usenet/asynccreateusenetdownload` | POST | Async create |
-| `/v1/api/usenet/controlusenetdownload` | POST | Control download |
-| `/v1/api/usenet/mylist` | GET | List downloads |
-| `/v1/api/usenet/checkcached` | POST/GET | Check cache |
-| `/v1/api/usenet/requestdl` | GET | Request download link |
+### Get Torrent List
 
-### 4. Web Downloads
+```bash
+GET /v1/api/torrents/mylist?offset=0&limit=1000&id=&bypass_cache=false
+```
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/webdl/createwebdownload` | POST | Create from URL |
-| `/v1/api/webdl/asynccreatewebdownload` | POST | Async create |
-| `/v1/api/webdl/controlwebdownload` | POST | Control download |
-| `/v1/api/webdl/mylist` | GET | List downloads |
-| `/v1/api/webdl/checkcached` | POST/GET | Check cache |
-| `/v1/api/webdl/requestdl` | GET | Request download link |
-| `/v1/api/webdl/hosters` | GET | List supported hosters |
+```python
+result = sdk.torrents.get_torrent_list(offset=0, limit=50)
+```
 
-**Create Web Download Body:**
+**Download States:**
+- `downloading` - Currently downloading
+- `uploading` - Currently seeding
+- `stalled (no seeds)` - No seeds available
+- `paused` - Paused
+- `completed` - Downloaded (use `cached` for completion status)
+- `cached` - Available on server
+- `metaDL` - Downloading metadata
+- `checkingResumeData` - Checking resumable data
+
+### Check Cached
+
+```bash
+POST /v1/api/torrents/checkcached?format=object&list_files=false
+```
+
 ```json
 {
-  "link": "https://example.com/file.zip",
-  "password": "optional",
-  "name": "custom name",
-  "as_queued": false,
-  "add_only_if_cached": false
+  "hashes": ["abc123...", "def456..."]
 }
 ```
 
-### 5. Request Download Link
+**Notes:**
+- Max ~100 hashes per request
+- Fast lookup (<1s per 100 hashes)
+- 1-hour cache
+- Formats: `object` or `list`
 
-**Query Parameters:**
-- `token` - Your API key
-- `torrent_id` | `usenet_id` | `web_id` - Item ID
-- `file_id` - Specific file ID (0 for all)
-- `zip_link` - Return as zip (default: false)
-- `user_ip` - User IP for CDN selection
-- `redirect` - Return direct URL (default: false)
+```python
+result = sdk.torrents.get_torrent_cached_availability(
+    hash=["abc123...", "def456..."],
+    format="object",
+    list_files=True
+)
+```
 
-### 6. RSS Feeds
+### Request Download Link
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/rss/addrss` | POST | Add RSS feed |
-| `/v1/api/rss/controlrss` | POST | Control feed |
-| `/v1/api/rss/modifyrss` | POST | Modify feed |
-| `/v1/api/rss/getfeeds` | GET | List feeds |
-| `/v1/api/rss/getfeeditems` | GET | Get feed items |
+```bash
+GET /v1/api/torrents/requestdl?token=APIKEY&torrent_id=123&file_id=0&zip_link=false&redirect=false&user_ip=
+```
 
-### 7. Streaming
+**Permalink for direct access:**
+```
+https://api.torbox.app/v1/api/torrents/requestdl?token=APIKEY&torrent_id=NUMBER&file_id=NUMBER&redirect=true
+```
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/stream/createstream` | GET | Create stream |
-| `/v1/api/stream/getstreamdata` | GET | Get stream data |
+- Link valid for 3 hours to start download
+- Once started, unlimited time to complete
+- Use `redirect=true` for permanent permalinks
 
-### 8. Cloud Integrations
+### Get Torrent Info
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/integration/googledrive` | POST | Upload to Google Drive |
-| `/v1/api/integration/dropbox` | POST | Upload to Dropbox |
-| `/v1/api/integration/onedrive` | POST | Upload to OneDrive |
-| `/v1/api/integration/gofile` | POST | Upload to GoFile |
-| `/v1/api/integration/1fichier` | POST | Upload to 1Fichier |
-| `/v1/api/integration/pixeldrain` | POST | Upload to Pixeldrain |
-| `/v1/api/integration/jobs` | GET | List transfer jobs |
-| `/v1/api/integration/job/{job_id}` | GET/DELETE | Get/cancel job |
+```bash
+GET /v1/api/torrents/torrentinfo?hash=ABC123&timeout=30&use_cache_lookup=false
+POST /v1/api/torrents/torrentinfo  # For file/magnet upload
+```
 
-### 9. General
+```python
+result = sdk.torrents.get_torrent_info(hash="abc123...")
+```
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | API status |
-| `/v1/api/stats` | GET | Torbox stats |
-| `/v1/api/stats/30days` | GET | 30-day stats |
-| `/v1/api/speedtest` | GET | Speedtest files |
-| `/v1/api/notifications/mynotifications` | GET | Get notifications |
-| `/v1/api/notifications/clear` | POST | Clear all notifications |
+### Export Torrent Data
 
-### 10. Queued Downloads
+```bash
+GET /v1/api/torrents/exportdata?torrent_id=123&type=magnet
+GET /v1/api/torrents/exportdata?torrent_id=123&type=file  # Returns .torrent file
+```
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/api/queued/getqueued` | GET | List queued items |
-| `/v1/api/queued/controlqueued` | POST | Control queued item |
+### Magnet to Torrent File
 
-## Using the API Script
+```bash
+POST /v1/api/torrents/magnettofile
+```
+
+---
+
+## Usenet Service
+
+### Create Usenet Download
+
+```bash
+POST /v1/api/usenet/createusenetdownload
+Content-Type: multipart/form-data
+```
+
+**Parameters:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `link` | string | NZB link (optional if file provided) |
+| `file` | file | NZB file (optional if link provided) |
+| `name` | string | Custom name (optional) |
+| `password` | string | Password (optional) |
+| `post_processing` | integer | Post-processing option (default: -1) |
+| `as_queued` | boolean | Add to queue (default: false) |
+| `add_only_if_cached` | boolean | Only add if cached (default: false) |
+
+```python
+result = sdk.usenet.create_usenet_download(link="https://.../file.nzb")
+```
+
+**Async:** `POST /v1/api/usenet/asynccreateusenetdownload`
+
+### Control Usenet Download
+
+```bash
+POST /v1/api/usenet/controlusenetdownload
+```
+
+```json
+{
+  "operation": "delete" | "pause" | "resume",
+  "usenet_id": 123,
+  "all": false
+}
+```
+
+### Get Usenet List
+
+```bash
+GET /v1/api/usenet/mylist?offset=0&limit=1000&id=
+```
+
+### Check Cached
+
+```bash
+POST /v1/api/usenet/checkcached?format=object&list_files=false
+```
+
+### Request Download Link
+
+```bash
+GET /v1/api/usenet/requestdl?token=APIKEY&usenet_id=123&file_id=0&zip_link=false&redirect=false
+```
+
+---
+
+## Web Downloads Service
+
+### Create Web Download
+
+```bash
+POST /v1/api/webdl/createwebdownload
+Content-Type: application/x-www-form-urlencoded
+```
+
+**Parameters:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `link` | string | **Required** - Download URL |
+| `password` | string | Password (optional) |
+| `name` | string | Custom name (optional) |
+| `as_queued` | boolean | Add to queue (default: false) |
+| `add_only_if_cached` | boolean | Only add if cached (default: false) |
+
+```python
+result = sdk.web_downloads_debrid.create_web_download(link="https://example.com/file.zip")
+```
+
+### Get Supported Hosters
+
+```bash
+GET /v1/api/webdl/hosters
+```
+
+Returns list of supported file hosters.
+
+---
+
+## Queued Service
+
+### Get Queued Downloads
+
+```bash
+GET /v1/api/queued/getqueued?id=&type=torrent&bypass_cache=false&offset=0&limit=1000
+```
+
+**Types:** `torrent`, `usenet`, `webdl`
+
+### Control Queued
+
+```bash
+POST /v1/api/queued/controlqueued
+```
+
+```json
+{
+  "operation": "delete",
+  "queued_id": 123,
+  "all": false
+}
+```
+
+---
+
+## User Service
+
+### Get User Info
+
+```bash
+GET /v1/api/user/me?settings=false
+```
+
+```python
+result = sdk.user.get_user_data(settings=True)
+```
+
+### Referrals
+
+```bash
+POST /v1/api/user/addreferral?referral=CODE
+GET /v1/api/user/referraldata
+```
+
+### Subscriptions & Transactions
+
+```bash
+GET /v1/api/user/subscriptions
+GET /v1/api/user/transactions
+GET /v1/api/user/transaction/pdf?transaction_id=xyz
+```
+
+### Device Authorization (OAuth2 Device Flow)
+
+```bash
+GET /v1/api/user/auth/device/start?app=MyApp
+POST /v1/api/user/auth/device/token
+```
+
+---
+
+## RSS Service
+
+### Add RSS Feed
+
+```bash
+POST /v1/api/rss/addrss
+```
+
+```json
+{
+  "url": "https://.../feed.rss",
+  "name": "My Feed",
+  "do_regex": "include_pattern",
+  "dont_regex": "exclude_pattern",
+  "dont_older_than": 7,
+  "pass_check": false,
+  "scan_interval": 60,
+  "rss_type": "torrent",
+  "torrent_seeding": 1
+}
+```
+
+### Control RSS Feed
+
+```bash
+POST /v1/api/rss/controlrss
+```
+
+**Operations:** `delete`, `pause`, `resume`
+
+### Modify RSS Feed
+
+```bash
+POST /v1/api/rss/modifyrss
+```
+
+### Get RSS Feeds
+
+```bash
+GET /v1/api/rss/getfeeds?id=
+```
+
+### Get RSS Feed Items
+
+```bash
+GET /v1/api/rss/getfeeditems?rss_feed_id=123
+```
+
+---
+
+## Integrations Service
+
+Upload downloads to cloud storage.
+
+### Upload to Google Drive
+
+```bash
+POST /v1/api/integration/googledrive
+```
+
+```json
+{
+  "id": 123,
+  "file_id": 0,
+  "zip": false,
+  "type": "torrent",
+  "google_token": "GOOGLE_OAUTH_TOKEN"
+}
+```
+
+### Upload to Dropbox
+
+```bash
+POST /v1/api/integration/dropbox
+```
+
+```json
+{
+  "id": 123,
+  "dropbox_token": "DROPBOX_TOKEN"
+}
+```
+
+### Upload to OneDrive
+
+```bash
+POST /v1/api/integration/onedrive
+```
+
+### Upload to GoFile
+
+```bash
+POST /v1/api/integration/gofile
+```
+
+Optional: `gofile_token` for authenticated uploads.
+
+### Upload to 1Fichier
+
+```bash
+POST /v1/api/integration/1fichier
+```
+
+### Upload to Pixeldrain
+
+```bash
+POST /v1/api/integration/pixeldrain
+```
+
+### Manage Transfer Jobs
+
+```bash
+GET /v1/api/integration/jobs                 # List all jobs
+GET /v1/api/integration/job/{job_id}         # Get job status
+DELETE /v1/api/integration/job/{job_id}      # Cancel job
+GET /v1/api/integration/jobs/{hash}          # Get jobs by hash
+```
+
+---
+
+## Notifications Service
+
+### Get Notifications
+
+```bash
+GET /v1/api/notifications/mynotifications    # JSON format
+GET /v1/api/notifications/rss?token=APIKEY   # RSS format
+```
+
+### Clear Notifications
+
+```bash
+POST /v1/api/notifications/clear             # Clear all
+POST /v1/api/notifications/clear/{id}        # Clear specific
+```
+
+### Test Notification
+
+```bash
+POST /v1/api/notifications/test              # Rate limited: 1/min
+```
+
+---
+
+## Using the CLI Script
 
 Use the provided script for easy API calls:
 
@@ -178,59 +588,24 @@ python3 ~/clawd/skills/torbox/scripts/torbox-api.py torrents cache --hashes "has
 
 # Request download link
 python3 ~/clawd/skills/torbox/scripts/torbox-api.py torrents download --id 123 --token YOUR_TOKEN
+
+# Create web download
+python3 ~/clawd/skills/torbox/scripts/torbox-api.py webdl create --link "https://..." --token YOUR_TOKEN
+
+# List usenet downloads
+python3 ~/clawd/skills/torbox/scripts/torbox-api.py usenet list --token YOUR_TOKEN
+
+# Set token via environment variable
+export TORBOX_TOKEN="your_token"
+python3 ~/clawd/skills/torbox/scripts/torbox-api.py torrents list
 ```
 
-## Example cURL Commands
-
-```bash
-# Get user info
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/user/me
-
-# Create torrent from magnet
-curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "magnet=magnet:?xt=urn:btih:..." \
-  https://api.torbox.app/v1/api/torrents/createtorrent
-
-# List torrents
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/torrents/mylist?offset=0&limit=50"
-
-# Check if cached
-curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"hashes":["hash1","hash2"]}' \
-  "https://api.torbox.app/v1/api/torrents/checkcached?format=object"
-
-# Request download link
-curl "https://api.torbox.app/v1/api/torrents/requestdl?token=YOUR_TOKEN&torrent_id=123&file_id=0"
-```
-
-## Common Operations
-
-**Check if torrent is cached:**
-```bash
-curl -X POST -H "Authorization: Bearer TOKEN" \
-  -d '{"hashes":["ABC123..."]}' \
-  https://api.torbox.app/v1/api/torrents/checkcached
-```
-
-**Add torrent and get download link:**
-1. Create torrent: POST `/v1/api/torrents/createtorrent`
-2. Poll list until downloaded: GET `/v1/api/torrents/mylist`
-3. Request download: GET `/v1/api/torrents/requestdl`
-
-**Upload to Google Drive:**
-```bash
-curl -X POST -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"id":123,"google_token":"GTOKEN","zip":false}' \
-  https://api.torbox.app/v1/api/integration/googledrive
-```
+---
 
 ## Response Format
 
-All responses are JSON with this structure:
+All responses follow this structure:
+
 ```json
 {
   "success": true,
@@ -239,7 +614,7 @@ All responses are JSON with this structure:
 }
 ```
 
-Errors return:
+**Error Response:**
 ```json
 {
   "success": false,
@@ -247,3 +622,35 @@ Errors return:
   "detail": "Error description"
 }
 ```
+
+**Common Error Codes:**
+- `ENDPOINT_NOT_FOUND` - Invalid URL
+- `VALIDATION_ERROR` - Invalid parameters
+- `AUTHENTICATION_FAILED` - Invalid or missing token
+- `RATE_LIMITED` - Too many requests
+
+---
+
+## Rate Limits
+
+- Test notification: 1 per minute
+- Cache checks: No explicit limit, but be reasonable
+- Download requests: Metered based on plan
+
+---
+
+## Response Models Reference
+
+Key response types you can expect:
+
+| Model | Description |
+|-------|-------------|
+| `GetTorrentListOkResponse` | Torrent list with download states |
+| `CreateTorrentOkResponse` | Created torrent details |
+| `RequestDownloadLinkOkResponse` | Download URL or permalink |
+| `GetTorrentCachedAvailabilityOkResponse` | Cache availability |
+| `GetUsenetListOkResponse` | Usenet download list |
+| `GetWebDownloadListOkResponse` | Web download list |
+| `GetUserDataOkResponse` | User account info |
+| `GetNotificationFeedOkResponse` | Notifications list |
+| `GetAllJobsOkResponse` | Cloud upload jobs |
