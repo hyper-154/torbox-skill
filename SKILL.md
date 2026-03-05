@@ -22,6 +22,8 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
   https://api.torbox.app/v1/api/user/me
 ```
 
+⚠️ **Free plan does NOT have API access** - You must upgrade to Essential ($3/mo) or higher.
+
 For unauthenticated endpoints (status, stats, changelogs), no token is needed.
 
 ---
@@ -54,44 +56,54 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### Plan Limitations
 
-| Feature | Free | Essential ($3/mo) | Standard ($5/mo) | Pro ($10/mo) |
-|---------|------|-------------------|------------------|--------------|
-| **Concurrent Files** | 1-2 | 3 | 5 | 10 |
-| **Max File Size** | Limited | 200GB | 200GB | 500GB |
-| **Seed Time** | Very limited | 24 hours | 14 days | 30 days |
-| **Max Speed** | Limited | 1 Gbit/s | 1 Gbit/s | 80 Gbit/s |
-| **Usenet Access** | ❌ NO | ❌ NO | ❌ NO | ✅ Premium servers |
-| **Web Downloads** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Storage** | Unlimited | Unlimited | Unlimited | Unlimited |
-| **Bandwidth** | Unlimited | Unlimited | Unlimited | Unlimited |
+| Feature | Free ($0/mo) | Essential ($3/mo) | Standard ($5/mo) | Pro ($10/mo) |
+|---------|--------------|-------------------|------------------|--------------|
+| **Concurrent Slots** | 1 | 3 | 5 | 10 |
+| **Downloads Per Month** | 10 | Unlimited | Unlimited | Unlimited |
+| **Max File Size** | 10GB | 200GB | 200GB | 1TB |
+| **Seed Time** | 24h cooldown | 24 hours | 14 days | 30 days |
+| **Max Speed** | 250Mbps | 1Gbps | 1Gbps | 80Gbps |
+| **Traffic Priority** | Reduced | Normal | Normal | High |
+| **Usenet Downloads** | ❌ NO | ❌ NO | ❌ NO | ✅ Unlimited |
+| **API Access** | ❌ NO | ✅ YES | ✅ YES | ✅ YES |
+| **3rd Party Apps** | ❌ NO | ✅ YES | ✅ YES | ✅ YES |
+| **Web Player** | ❌ NO | ❌ NO | ❌ NO | ✅ YES |
+| **RSS Feeds** | ❌ NO | Limited | Limited | ✅ Unlimited |
 
 ### Plan-Based Decision Tree
 
 ```
 IF user.plan == "free":
-    - Max 1-2 concurrent downloads
-    - CANNOT use Usenet endpoints (will fail)
-    - Limited speed and seed time
-    - Check cache before adding to save slots
+    - ❌ NO API ACCESS - Cannot use this skill
+    - Must upgrade to Essential+ for API access
 
 IF user.plan == "essential":
     - Max 3 concurrent downloads
-    - CANNOT use Usenet endpoints (will fail)
-    - 24h seed time only
+    - 10 downloads per month limit
     - 200GB max file size
+    - 24h seed time only
+    - CANNOT use Usenet endpoints (will fail)
+    - NO Web Player
+    - Limited RSS
 
 IF user.plan == "standard":
-    - Max 5 concurrent downloads  
-    - CANNOT use Usenet endpoints (will fail)
-    - 14 days seed time
+    - Max 5 concurrent downloads
+    - Unlimited downloads
     - 200GB max file size
+    - 14 days seed time
+    - CANNOT use Usenet endpoints (will fail)
+    - NO Web Player
+    - Limited RSS
 
 IF user.plan == "pro":
     - Max 10 concurrent downloads
-    - ✅ CAN use Usenet endpoints
+    - Unlimited downloads
+    - ✅ CAN use Usenet endpoints (unlimited)
     - 30 days seed time
-    - 500GB max file size
-    - Premium Usenet servers
+    - 1TB max file size
+    - ✅ Web Player enabled
+    - ✅ Unlimited RSS feeds
+    - 80Gbps speed
 ```
 
 ### Python Helper to Check Plan
@@ -133,14 +145,16 @@ if user['data']['plan'] != 'pro':
 | Service | Description | Plan Required |
 |---------|-------------|---------------|
 | **General** | API status, stats, changelogs, speedtest | Any (unauth) |
-| **Torrents** | Create, control, list, check cache, download | Any |
+| **Torrents** | Create, control, list, check cache, download | Essential+ |
 | **Usenet** | Create, control, list, check cache NZB | **Pro only** |
-| **Web Downloads** | Create, control, list web downloads | Any |
-| **Queued** | Manage queued downloads | Any |
-| **User** | User info, referrals, subscriptions | Any |
-| **RSS** | Manage RSS feeds | Any |
-| **Integrations** | Upload to cloud storage | Any |
-| **Notifications** | Get and clear notifications | Any |
+| **Web Downloads** | Create, control, list web downloads | Essential+ |
+| **Queued** | Manage queued downloads | Essential+ |
+| **User** | User info, referrals, subscriptions | Essential+ |
+| **RSS** | Manage RSS feeds | Essential+ (Pro=unlimited) |
+| **Integrations** | Upload to cloud storage | Essential+ |
+| **Notifications** | Get and clear notifications | Essential+ |
+
+⚠️ **Free plan has NO API access** - Must upgrade to Essential ($3/mo) or higher.
 
 ---
 
@@ -674,18 +688,20 @@ curl -X POST \
 
 ## Performance Optimization
 
-### For Free/Lower Plans
+### For Essential/Standard Plans
+
+Essential plan has a **10 downloads per month limit** - use cache checks to avoid wasting downloads on non-cached torrents.
 
 **1. Always check cache first:**
 ```bash
-# Check cache before adding
+# Check cache before adding (saves your 10/month on Essential)
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"hashes":["ABC123..."]}' \
   "https://api.torbox.app/v1/api/torrents/checkcached?format=object"
 
-# Only add if cached (saves slots on free plans)
+# Only add if cached
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "magnet=magnet:?xt=urn:btih:ABC123..." \
@@ -811,19 +827,22 @@ All responses follow this structure:
 ### "Cannot add more torrents"
 - Check active downloads vs plan limit
 - Use `as_queued=true` or delete old torrents
-- Free plan: Max 1-2 concurrent
-
-### "Download link expired"
-- Links valid for 3 hours to START download
-- Once started, unlimited time to complete
-- Request new link or use permalinks
+- Essential: Max 3 concurrent
+- Standard: Max 5 concurrent
+- Pro: Max 10 concurrent
 
 ### "File too large"
 - Essential/Standard: 200GB max
-- Pro: 500GB max
+- Pro: 1TB max
 - Check file size before adding
 
 ### Slow speeds
-- Check plan speed tier (Free/Essential/Standard = 1Gbit/s, Pro = 80Gbit/s)
+- Essential/Standard: 1Gbps
+- Pro: 80Gbps
 - Use speedtest endpoint: `GET /v1/api/speedtest`
 - Try different CDN via `user_ip` parameter
+
+### "API authentication failed"
+- Free plan has NO API access
+- Must upgrade to Essential ($3/mo) or higher
+- Check plan: `GET /v1/api/user/me`
