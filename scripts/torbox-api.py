@@ -9,13 +9,16 @@ import urllib.parse
 from typing import Optional
 
 BASE_URL = "https://api.torbox.app"
+SEARCH_URL = "https://search-api.torbox.app"
 
 
 def api_call(method: str, endpoint: str, token: Optional[str] = None, 
-             data=None, params=None, is_json=True) -> dict:
+             data=None, params=None, is_json=True, base_url=BASE_URL) -> dict:
     """Make an API call to Torbox."""
-    url = f"{BASE_URL}{endpoint}"
+    url = f"{base_url}{endpoint}"
     if params:
+        # Filter None values from params
+        params = {k: v for k, v in params.items() if v is not None}
         url += "?" + urllib.parse.urlencode(params)
     
     headers = {}
@@ -43,6 +46,68 @@ def api_call(method: str, endpoint: str, token: Optional[str] = None,
             return {"success": False, "error": f"HTTP {e.code}", "detail": str(e)}
     except Exception as e:
         return {"success": False, "error": "REQUEST_FAILED", "detail": str(e)}
+
+
+def cmd_search(args):
+    """Search for content on Torrents or Usenet."""
+    params = {
+        "metadata": args.metadata,
+        "check_cache": args.check_cache,
+        "check_owned": args.check_owned,
+        "cached_only": args.cached_only,
+        "search_user_engines": args.user_engines
+    }
+    
+    if args.type == "torrent":
+        endpoint = f"/torrents/search/{urllib.parse.quote(args.query)}"
+    else:
+        endpoint = f"/usenet/search/{urllib.parse.quote(args.query)}"
+        
+    result = api_call("GET", endpoint, token=args.token, params=params, base_url=SEARCH_URL)
+    print(json.dumps(result, indent=2))
+
+
+def cmd_search_id(args):
+    """Search for content by metadata ID."""
+    params = {
+        "metadata": args.metadata,
+        "check_cache": args.check_cache,
+        "check_owned": args.check_owned,
+        "cached_only": args.cached_only,
+        "season": args.season,
+        "episode": args.episode
+    }
+    
+    if args.type == "torrent":
+        endpoint = f"/torrents/{args.id}"
+    else:
+        endpoint = f"/usenet/{args.id}"
+        
+    result = api_call("GET", endpoint, token=args.token, params=params, base_url=SEARCH_URL)
+    print(json.dumps(result, indent=2))
+
+
+def cmd_unified_search(args):
+    """Combine Torrent and Usenet search results (Agent Best Practice)."""
+    params = {
+        "metadata": args.metadata,
+        "check_cache": True,
+        "search_user_engines": args.user_engines
+    }
+    
+    t_endpoint = f"/torrents/search/{urllib.parse.quote(args.query)}"
+    u_endpoint = f"/usenet/search/{urllib.parse.quote(args.query)}"
+    
+    t_results = api_call("GET", t_endpoint, token=args.token, params=params, base_url=SEARCH_URL)
+    u_results = api_call("GET", u_endpoint, token=args.token, params=params, base_url=SEARCH_URL)
+    
+    combined = {
+        "success": True,
+        "torrents": t_results.get("data", {}).get("torrents", []),
+        "usenet": u_results.get("data", {}).get("nzbs", []),
+        "metadata": t_results.get("data", {}).get("metadata") or u_results.get("data", {}).get("metadata")
+    }
+    print(json.dumps(combined, indent=2))
 
 
 def cmd_status(_):
@@ -418,6 +483,36 @@ def main():
     rss_list = rss_sub.add_parser("list", help="List RSS feeds")
     rss_list.set_defaults(func=cmd_rss_list)
     
+    # Search
+    search_parser = subparsers.add_parser("search", help="Search content")
+    search_parser.add_argument("query", help="Search query")
+    search_parser.add_argument("--type", default="torrent", choices=["torrent", "usenet"])
+    search_parser.add_argument("--metadata", action="store_true", help="Include metadata")
+    search_parser.add_argument("--check-cache", action="store_true", help="Check if cached")
+    search_parser.add_argument("--check-owned", action="store_true", help="Check if owned")
+    search_parser.add_argument("--cached-only", action="store_true", help="Return only cached")
+    search_parser.add_argument("--user-engines", action="store_true", help="Search user engines")
+    search_parser.set_defaults(func=cmd_search)
+    
+    # Search by ID
+    search_id_parser = subparsers.add_parser("search-id", help="Search content by metadata ID")
+    search_id_parser.add_argument("id", help="Metadata ID (type:id)")
+    search_id_parser.add_argument("--type", default="torrent", choices=["torrent", "usenet"])
+    search_id_parser.add_argument("--metadata", action="store_true", help="Include metadata")
+    search_id_parser.add_argument("--check-cache", action="store_true")
+    search_id_parser.add_argument("--check-owned", action="store_true")
+    search_id_parser.add_argument("--cached-only", action="store_true")
+    search_id_parser.add_argument("--season", type=int)
+    search_id_parser.add_argument("--episode", type=int)
+    search_id_parser.set_defaults(func=cmd_search_id)
+    
+    # Unified Search
+    unified_parser = subparsers.add_parser("unified-search", help="Combined search (Agent Recommended)")
+    unified_parser.add_argument("query", help="Search query")
+    unified_parser.add_argument("--metadata", action="store_true")
+    unified_parser.add_argument("--user-engines", action="store_true")
+    unified_parser.set_defaults(func=cmd_unified_search)
+    
     args = parser.parse_args()
     
     # Get token from env if not provided
@@ -425,7 +520,7 @@ def main():
         import os
         args.token = os.environ.get("TORBOX_TOKEN")
     
-    if args.command in ["user", "torrents", "webdl", "usenet", "queued", "rss"]:
+    if args.command in ["user", "torrents", "webdl", "usenet", "queued", "rss", "search", "search-id", "unified-search"]:
         if not args.token:
             print("Error: API token required. Use --token or set TORBOX_TOKEN", file=sys.stderr)
             sys.exit(1)

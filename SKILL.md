@@ -17,18 +17,20 @@ Pure HTTP API for managing torrents, Usenet, web downloads, search engines, stre
 
 | Feature | Description |
 |---------|-------------|
-| **Torrent Caching** | Add a magnet link or .torrent file. Torbox downloads it to their servers. You download directly from Torbox's CDN (not P2P). |
+| **Torrent Caching** | Add a magnet link or .torrent file. Torbox downloads it via "satellites". You download directly from Torbox's CDN. Supports most **Private Trackers**. |
 | **Usenet Downloads** | (Pro only) Download NZB files from Usenet servers. |
-| **Web Downloads** | Debrid direct download URLs from supported file hosters. |
-| **Streaming** | Stream video files directly in browser (Pro Web Player) or via API. |
+| **Web Downloads** | Debrid direct download URLs from supported hosters, including **Baidu** and **Bunkr**. |
+| **Streaming** | Stream directly in browser (Pro Web Player) with **Intro Detection/Skip** or via API to VLC, MPV, Kodi, and Stremio. |
 | **Cloud Uploads** | Automatically upload completed downloads to Google Drive, Dropbox, etc. |
 | **RSS Automation** | Auto-download from RSS feeds (torrent sites, Usenet indexers). |
+| **FTP Access** | Access your downloads via FTP/SFTP using clients like Filezilla or Cyberduck. |
+| **API/Integrations** | Extensive support for **RDTClient** (Radarr/Sonarr), JDownloader2, and custom indexers (BYOI). |
 
 ### Key Concepts
 
-**Caching:** When you add a torrent, Torbox checks if it's already cached (pre-downloaded by another user). Cached downloads are instant. Non-cached downloads take time to fetch from the swarm.
+**Caching:** When you add a torrent, Torbox checks if it's already cached. Cached downloads are instant. Inactive or unused files may be purged periodically to manage storage costs.
 
-**Debrid:** Instead of downloading P2P (BitTorrent) yourself, Torbox does it for you. You get a clean HTTP/HTTPS download link from their CDN.
+**Debrid:** Instead of downloading P2P yourself, Torbox does it for you. You get a clean HTTPS download link from their CDN.
 
 **Concurrent Slots:** Maximum simultaneous active downloads. Free=1, Essential=3, Standard=5, Pro=10. Additional downloads are queued.
 
@@ -36,20 +38,32 @@ Pure HTTP API for managing torrents, Usenet, web downloads, search engines, stre
 
 **API Access:** Free plan has NO API access. Essential+ required to use this skill.
 
-### Basic Workflow
+**Safety:** Automatic virus detection is performed on downloads to ensure user safety.
 
-1. **Add Content:** Send magnet/NZB/URL to Torbox via API
-2. **Wait/Download:** Torbox fetches the content (instant if cached)
-3. **Get Download Link:** Request CDN link when ready
-4. **Download:** Download directly from Torbox's CDN
+**Multi-IP Usage:** TorBox accounts can be used from multiple different IP addresses simultaneously.
 
-### Important Constraints
+**Email Policy:** Users can sign up with nearly any email, but **email changes are strictly prohibited** once registered.
 
-- **Free Plan:** 10 downloads/month, NO API access, no Usenet, no Web Player
-- **Essential/Standard:** API access, NO Usenet, NO Web Player
-- **Pro:** Full access including Usenet and Web Player streaming
-- **Max File Sizes:** Free=10GB, Essential/Standard=200GB, Pro=1TB
-- **Rate Limits:** Respect API limits; abusive use may result in bans
+---
+
+## 🤖 Developer & Agent Guide
+
+This skill is designed for both human users and automated agents. When performing tasks as an agent, follow these mandatory best practices:
+
+### 1. Unified Search Strategy (Crucial)
+The Torbox Search API separates Torrent and Usenet indexes. **Always query both** to provide a complete view of available content.
+- **Why?** High-quality "Remux" files (raw Blu-ray) are significantly more common on Usenet, while Torrents may have more variety in compressed formats.
+- **Action:** Call `GET search-api.torbox.app/torrents/search/...` AND `GET search-api.torbox.app/usenet/search/...`.
+
+### 2. Instant Streaming Workflow (Cache-First)
+To provide the best experience (no download waiting), follow this sequence:
+1. **Search with Cache Check:** Use `check_cache=true` on both search endpoints.
+2. **Filter for Cached Results:** Prioritize items where `cached: true`.
+3. **Add with Safeguard:** Use the `add_only_if_cached=true` flag when adding the content to the account. This prevents accidentally starting a slow download if the cache status changed.
+4. **Stream Direct:** Request the download link with `zip_link=false` and `redirect=false` to get a direct URL for media players.
+
+### 3. Identity Consistency
+When searching for known media, **prefer IMDb IDs** (`imdb:tt...`) over raw query strings. This ensures matching across both protocol silos.
 
 ---
 
@@ -59,17 +73,18 @@ Pure HTTP API for managing torrents, Usenet, web downloads, search engines, stre
 
 | Task | Load Section |
 |------|--------------|
+| **Search for movies/TV shows** | `search.md` ⭐ |
 | Check plan, auth, or API limits | `auth-and-plans.md` |
 | Get user info, tokens, subscriptions | `user-account.md` |
 | Create/manage torrents | `torrents.md` |
 | Usenet downloads (NZB) | `usenet.md` |
 | Web downloads (URL debrid) | `web-downloads.md` |
 | RSS feed automation | `rss.md` |
-| Video streaming | `streaming.md` |
+| Video streaming & Web Player | `streaming.md` |
 | Check notifications | `notifications.md` |
 | Upload to cloud storage | `integrations.md` |
 | API health, stats | `general-service.md` |
-| Error codes, quirks | `quirks-and-errors.md` |
+| Error codes, quirks, storage | `quirks-and-errors.md` |
 
 ---
 
@@ -83,7 +98,22 @@ https://api.torbox.app
 
 ## Section Files
 
-### 1. auth-and-plans.md
+### 1. search.md ⭐
+**Search API - Find torrents and Usenet content**
+
+- Search torrents by query or ID
+- Search Usenet/NZB by query or ID
+- Metadata search
+- Torznab/Newznab API compatibility
+- Download Usenet results
+
+**Use when:** Looking for movies, TV shows, or other content to download. This is the starting point for most workflows.
+
+**Note:** Separate API at `https://search-api.torbox.app`
+
+---
+
+### 2. auth-and-plans.md
 **Authentication, plan limits, decision tree, Python helper**
 
 - Plan limitations table (Free/Essential/Standard/Pro)
@@ -95,7 +125,7 @@ https://api.torbox.app
 
 ---
 
-### 2. user-account.md
+### 3. user-account.md
 **User Service - Account management**
 
 - Get user info (`/user/me`)

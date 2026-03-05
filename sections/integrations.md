@@ -6,63 +6,6 @@ Upload downloads to cloud storage. Supported platforms: `googledrive`, `dropbox`
 
 ### Integration OAuth & Token Acquisition
 
-1. **OAuth Flow Overview**:
-   - `GET /v1/api/integration/oauth/me` - Get connected OAuth integrations
-   - `GET /v1/api/integration/oauth/{provider}` - Start OAuth redirect
-   - `POST/GET /v1/api/integration/oauth/{provider}/callback` - OAuth callback
-   - `GET /v1/api/integration/oauth/{provider}/success` - Get token after success
-   - `POST /v1/api/integration/oauth/{provider}/register` - Register OAuth token
-   - `DELETE /v1/api/integration/oauth/{provider}/unregister` - Remove OAuth link
-
-2. **Token Field Names** (from integration_schemas.json):
-   - Google Drive: `google_token` (required)
-   - Dropbox: `dropbox_token` (required)
-   - OneDrive: `onedrive_token` (required)
-   - GoFile: `gofile_token` (optional)
-   - 1Fichier: `onefichier_token` (optional)
-   - PixelDrain: `pixeldrain_token` (optional)
-
-3. **OAuth Register Request Body**:
-   ```json
-   {
-     "token": "oauth_access_token",
-     "refresh_token": "oauth_refresh_token"
-   }
-   ```
-
-### Upload to Cloud
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123,
-    "file_id": 0,
-    "zip": false,
-    "type": "torrent",
-    "google_token": "GOOGLE_OAUTH_TOKEN"
-  }' \
-  https://api.torbox.app/v1/api/integration/googledrive
-```
-
-**Parameters:**
-| Field | In | Type | Required | Description |
-|-------|----|------|----------|-------------|
-| `id` | body | integer | **Yes**| Download ID |
-| `file_id` | body | integer | No | File index (default: `0`) |
-| `zip` | body | boolean | No | Upload as zip (default: `false`) |
-| `type` | body | string | No | `torrent`, `usenet`, or `webdl` |
-| `{provider}_token`| body | string | **Yes**| OAuth token for respective provider |
-
-### Manage Transfer Jobs
-
-```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/integration/jobs
-```
-
-### Integration OAuth & Token Acquisition
-
 TorBox provides OAuth flows for connecting cloud storage providers. You can either use TorBox's built-in OAuth redirects or register your own OAuth tokens.
 
 **Token Field Names by Provider:**
@@ -86,9 +29,6 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   https://api.torbox.app/v1/api/integration/oauth/googledrive
 
-# OAuth callback (handled by provider, then TorBox)
-# GET/POST /v1/api/integration/oauth/{provider}/callback
-
 # Get token after successful OAuth (success page)
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   https://api.torbox.app/v1/api/integration/oauth/googledrive/success
@@ -109,10 +49,54 @@ curl -X DELETE \
   https://api.torbox.app/v1/api/integration/oauth/googledrive/unregister
 ```
 
-**OAuth Register Request Body:**
+### Upload to Cloud
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "file_id": 0,
+    "zip": false,
+    "type": "torrent",
+    "google_token": "GOOGLE_OAUTH_TOKEN"
+  }' \
+  https://api.torbox.app/v1/api/integration/googledrive
+```
+
+**Parameters:**
 | Field | In | Type | Required | Description |
 |-------|----|------|----------|-------------|
-| `token` | body | string | Yes | OAuth access token |
-| `refresh_token` | body | string | Yes | OAuth refresh token |
+| `id` | body | integer | **Yes**| Download ID |
+| `file_id` | body | integer | No | File index (required if `zip` is `false`) |
+| `zip` | body | boolean | No | Upload entire download as zip (default: `false`) |
+| `type` | body | string | No | `torrent`, `usenet`, or `webdl` |
+| `{provider}_token`| body | string | **Yes**| OAuth token for respective provider |
 
-**Note:** Providers are `googledrive`, `dropbox`, `onedrive`, `gofile`, `1fichier`, `pixeldrain`.
+### Other Integrations
+
+TorBox supports various external tools and applications:
+
+- **FTP Access:** Access your downloads via FTP/SFTP. Recommended clients are **Filezilla** and **Cyberduck**.
+- **JDownloader2:** Download your TorBox web downloads and torrent files directly in JDownloader2.
+- **RDTClient:** Connect TorBox with **Radarr** and **Sonarr** using RDTClient (Docker-based).
+- **Mobile Apps:** Community-developed mobile apps are available for both iOS and Android.
+- **Ferrite:** iOS-only search engine for torrents integrated with TorBox.
+
+### Manage Transfer Jobs
+
+```bash
+# Get all jobs
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/integration/jobs
+
+# Get jobs by download hash
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/integration/jobs/ABC123DEF456
+
+# Get specific job details
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/integration/job/JOB_ID
+
+# Cancel/Delete a specific job
+curl -X DELETE -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/integration/job/JOB_ID
+```
+

@@ -4,12 +4,26 @@
 
 ⚠️ **PRO PLAN ONLY** — The Web Player feature (in-browser streaming) requires Pro plan. The streaming endpoints work on all plans, but the Web Player UI is Pro-only.
 
+### Web Player Features
+- **In-Browser Streaming:** Stream any video file directly in your browser without additional software.
+- **Intro Detection:** TorBox's Web Player automatically detects and can skip intros.
+- **Subtitles & Audio:** Supports multiple subtitle tracks and audio streams.
+
+### External Player Support
+TorBox content can be streamed to various third-party applications:
+- **Stremio:** Using the TorBox Stremio addon.
+- **VLC:** Stream direct links from TorBox.
+- **MPV:** Lightweight and powerful streaming.
+- **Kodi:** Support via addons like **POV**.
+- **Mobile Apps:** Community-maintained mobile apps for streaming on the go.
+
 ### Create Stream
 
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://api.torbox.app/v1/api/stream/createstream?id=123&type=torrent&file_id=0"
 ```
+
 
 **Parameters (`createstream`):**
 | Field | In | Type | Required | Description |

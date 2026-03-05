@@ -41,6 +41,11 @@ Pay close attention to required Content-Types when creating downloads:
 - **Usenet (`createusenetdownload`)**: Requires `multipart/form-data` (to support optional `.nzb` file uploads).
 - **Web Downloads (`createwebdownload`)**: Requires `application/x-www-form-urlencoded`.
 
+### 7. File Storage and Purging
+- **Caching:** TorBox stores and caches files for users, but it does **not** claim to store them indefinitely.
+- **Purge Behavior:** Since storage is expensive, inactive or unused files are eventually purged from the cache.
+- **Inactive Downloads:** If a download is not being used or accessed, it may be marked as inactive and cleared to make room for new content.
+
 ---
 
 ## Error Handling
