@@ -1,0 +1,164 @@
+POST /v1/api/user/refreshtoken - Refresh Token
+  Params: body:session_token (req)
+GET /v1/api/user/getconfirmation - Get Confirmation Code
+GET /v1/api/user/me - Get User
+  Params: settings (opt)
+POST /v1/api/user/addreferral - Add Referral
+  Params: referral (req)
+GET /v1/api/user/auth/device/start - Start Device Code Authorization
+  Params: app (opt)
+POST /v1/api/user/auth/device/token - Get Token From Device Code
+  Params: body:device_code (req)
+DELETE /v1/api/user/deleteme - Delete User Account
+  Params: body:session_token (req), body:confirmation_code (req)
+GET /v1/api/user/referraldata - Get Referral Data
+GET /v1/api/user/subscriptions - Get Subscriptions
+GET /v1/api/user/transactions - Get Transactions
+GET /v1/api/user/transaction/pdf - Get Transaction Pdf
+  Params: transaction_id (req)
+PUT /v1/api/user/settings/addsearchengines - Add Search Engine
+  Params: body:type (req), body:url (req), body:apikey (req), body:download_type (req)
+GET /v1/api/user/settings/searchengines - Get Search Engines
+  Params: id (opt)
+POST /v1/api/user/settings/modifysearchengines - Edit Search Engine
+  Params: body:id (req), body:type (opt), body:url (opt), body:apikey (opt), body:download_type (opt)
+POST /v1/api/user/settings/controlsearchengines - Control Search Engine
+  Params: body:operation (req), body:id (opt), body:all (opt)
+POST /v1/api/torrents/createtorrent - Create Torrent
+  Params: body:file (opt), body:magnet (opt), body:seed (opt), body:allow_zip (opt), body:name (opt), body:as_queued (opt), body:add_only_if_cached (opt)
+POST /v1/api/torrents/asynccreatetorrent - Async Create Torrent
+  Params: body:file (opt), body:magnet (opt), body:seed (opt), body:allow_zip (opt), body:name (opt), body:as_queued (opt), body:add_only_if_cached (opt)
+POST /v1/api/torrents/controltorrent - Control Torrent
+  Params: body:operation (req), body:torrent_id (opt), body:all (opt)
+GET /v1/api/torrents/getqueued - Get Queued Torrents
+POST /v1/api/torrents/controlqueued - Control Queued
+GET /v1/api/torrents/requestdl - Request Download
+  Params: token (req), torrent_id (req), file_id (opt), zip_link (opt), user_ip (opt), redirect (opt)
+GET /v1/api/torrents/mylist - Get My Torrent List
+  Params: id (opt), bypass_cache (opt), offset (opt), limit (opt)
+POST /v1/api/torrents/checkcached - Check Cached Torrent
+  Params: hash (opt), format (opt), list_files (opt)
+GET /v1/api/torrents/checkcached - Check Cached Torrent
+  Params: hash (opt), format (opt), list_files (opt)
+GET /v1/api/torrents/exportdata - Export Torrent Data
+  Params: torrent_id (req), type (req)
+POST /v1/api/torrents/magnettofile - Magnet To File
+  Params: body:magnet (req)
+GET /v1/api/torrents/torrentinfo - Get Torrent Info
+  Params: hash (req), timeout (opt), use_cache_lookup (opt)
+POST /v1/api/torrents/torrentinfo - Get Torrent Info Post
+  Params: body:timeout (opt), body:hash (opt), body:magnet (opt), body:file (opt), body:use_cache_lookup (opt), body:peers_only (opt)
+PUT /v1/api/torrents/edittorrent - Edit Torrent
+  Params: body:torrent_id (req), body:name (opt), body:tags (opt), body:alternative_hashes (opt)
+GET / - Status
+GET /v1/api/stats - Get Stats
+GET /v1/api/stats/30days - Get 30 Day Stats
+GET /v1/api/notifications/rss - Get Rss Notifications
+  Params: token (req)
+GET /v1/api/notifications/mynotifications - Get Notifications
+POST /v1/api/notifications/clear - Clear All Notifications
+POST /v1/api/notifications/clear/{id} - Clear Notification
+  Params: id (req)
+POST /v1/api/notifications/test - Test Notification
+GET /v1/api/intercom/hash - Get Intercom Hash
+  Params: auth_id (req), email (req)
+GET /v1/api/changelogs/rss - Get Rss Changelog
+GET /v1/api/changelogs/json - Get Json Changelog
+GET /v1/api/speedtest - Get Speedtest Files
+  Params: user_ip (opt), region (opt), test_length (opt)
+POST /v1/api/webdl/createwebdownload - Create Web Download
+  Params: body:link (req), body:password (opt), body:name (opt), body:as_queued (opt), body:add_only_if_cached (opt)
+POST /v1/api/webdl/asynccreatewebdownload - Async Create Web Download
+  Params: body:link (req), body:password (opt), body:name (opt), body:as_queued (opt), body:add_only_if_cached (opt)
+POST /v1/api/webdl/controlwebdownload - Control Web Download
+  Params: body:operation (req), body:webdl_id (opt), body:all (opt)
+GET /v1/api/webdl/requestdl - Request Web Download
+  Params: token (req), web_id (req), file_id (opt), zip_link (opt), user_ip (opt), redirect (opt)
+GET /v1/api/webdl/mylist - Get My Webdownloads List
+  Params: id (opt), bypass_cache (opt), offset (opt), limit (opt)
+POST /v1/api/webdl/checkcached - Check Cached Webdownload
+  Params: hash (opt), format (opt), list_files (opt)
+GET /v1/api/webdl/checkcached - Check Cached Webdownload
+  Params: hash (opt), format (opt), list_files (opt)
+GET /v1/api/webdl/hosters - Get Hosters List
+PUT /v1/api/webdl/editwebdownload - Edit Web Download
+  Params: body:webdl_id (req), body:name (opt), body:tags (opt), body:alternative_hashes (opt)
+POST /v1/api/usenet/createusenetdownload - Create Usenet Download
+  Params: body:link (opt), body:file (opt), body:name (opt), body:password (opt), body:post_processing (opt), body:as_queued (opt), body:add_only_if_cached (opt)
+POST /v1/api/usenet/asynccreateusenetdownload - Async Create Usenet Download
+  Params: body:link (opt), body:file (opt), body:name (opt), body:password (opt), body:post_processing (opt), body:as_queued (opt), body:add_only_if_cached (opt)
+POST /v1/api/usenet/controlusenetdownload - Control Usenet Download
+  Params: body:operation (req), body:usenet_id (opt), body:all (opt)
+GET /v1/api/usenet/requestdl - Request Usenet Download
+  Params: token (req), usenet_id (req), file_id (opt), zip_link (opt), user_ip (opt), redirect (opt)
+GET /v1/api/usenet/mylist - Get My Usenetdownloads List
+  Params: id (opt), bypass_cache (opt), offset (opt), limit (opt)
+POST /v1/api/usenet/checkcached - Check Cached Usenetdownload
+  Params: hash (opt), format (opt), list_files (opt)
+GET /v1/api/usenet/checkcached - Check Cached Usenetdownload
+  Params: hash (opt), format (opt), list_files (opt)
+PUT /v1/api/usenet/editusenetdownload - Edit Usenet Download
+  Params: body:usenet_download_id (req), body:name (opt), body:tags (opt), body:alternative_hashes (opt)
+POST /v1/api/rss/addrss - Add Rss Feed
+  Params: body:url (req), body:name (req), body:do_regex (opt), body:dont_regex (opt), body:dont_older_than (opt), body:pass_check (opt), body:scan_interval (opt), body:rss_type (opt), body:torrent_seeding (opt)
+POST /v1/api/rss/controlrss - Control Rss Feed
+  Params: body:operation (req), body:rss_feed_id (req)
+POST /v1/api/rss/modifyrss - Modify Rss Feed
+  Params: body:rss_feed_id (req), body:name (opt), body:do_regex (opt), body:dont_regex (opt), body:scan_interval (opt), body:dont_older_than (opt), body:rss_type (opt), body:torrent_seeding (opt)
+GET /v1/api/rss/getfeeds - Get Rss Feeds
+  Params: id (opt)
+GET /v1/api/rss/getfeeditems - Get Rss Feed Items
+  Params: rss_feed_id (req)
+GET /v1/api/stream/createstream - Create Stream
+  Params: id (req), file_id (opt), type (opt), chosen_subtitle_index (opt), chosen_audio_index (opt), chosen_resolution_index (opt), scrobbling_enabled (opt)
+GET /v1/api/stream/getstreamdata - Get Stream Data
+  Params: token (req), presigned_token (req), chosen_subtitle_index (opt), chosen_audio_index (opt), chosen_resolution_index (opt)
+GET /v1/api/integration/oauth/me - Get Oauth Integrations
+GET /v1/api/integration/oauth/{provider} - Oauth Redirect
+  Params: provider (req)
+POST /v1/api/integration/oauth/{provider}/callback - Oauth Callback
+  Params: provider (req)
+GET /v1/api/integration/oauth/{provider}/callback - Oauth Callback
+  Params: provider (req)
+GET /v1/api/integration/oauth/{provider}/success - Oauth Success
+  Params: provider (req)
+POST /v1/api/integration/googledrive - Add To Google Drive
+  Params: body:id (req), body:file_id (opt), body:zip (opt), body:type (opt), body:google_token (req)
+POST /v1/api/integration/dropbox - Add To Dropbox
+  Params: body:id (req), body:file_id (opt), body:zip (opt), body:type (opt), body:dropbox_token (req)
+POST /v1/api/integration/onedrive - Add To Onedrive
+  Params: body:id (req), body:file_id (opt), body:zip (opt), body:type (opt), body:onedrive_token (req)
+POST /v1/api/integration/gofile - Add To Gofile
+  Params: body:id (req), body:file_id (opt), body:zip (opt), body:type (opt), body:gofile_token (opt)
+POST /v1/api/integration/1fichier - Add To 1Fichier
+  Params: body:id (req), body:file_id (opt), body:zip (opt), body:type (opt), body:onefichier_token (opt)
+POST /v1/api/integration/pixeldrain - Add To Pixeldrain
+  Params: body:id (req), body:file_id (opt), body:zip (opt), body:type (opt), body:pixeldrain_token (opt)
+GET /v1/api/integration/job/{job_id} - Get Job Status
+  Params: job_id (req)
+DELETE /v1/api/integration/job/{job_id} - Cancel Job
+  Params: job_id (req)
+GET /v1/api/integration/jobs - Get All Jobs
+GET /v1/api/integration/jobs/{hash} - Get Job By Hash
+  Params: hash (req)
+POST /v1/api/integration/oauth/{provider}/register - Oauth Register
+  Params: provider (req), body:token (req), body:refresh_token (req)
+DELETE /v1/api/integration/oauth/{provider}/unregister - Oauth Unregister
+  Params: provider (req)
+POST /v1/api/vendors/register - Register Vendor
+  Params: body:vendor_name (req), body:vendor_url (req)
+GET /v1/api/vendors/account - Get Vendor Account
+PUT /v1/api/vendors/updateaccount - Update Vendor Account
+  Params: body:vendor_name (opt), body:vendor_url (opt)
+GET /v1/api/vendors/getaccounts - Get Vendor Accounts
+GET /v1/api/vendors/getaccount - Get User Vendor Account
+  Params: user_auth_id (req)
+POST /v1/api/vendors/registeruser - Register New User
+  Params: body:user_email (req)
+DELETE /v1/api/vendors/removeuser - Delete User
+  Params: user_auth_id (req)
+PATCH /v1/api/vendors/refresh - Refresh Vendor Users
+GET /v1/api/queued/getqueued - Get Queued Downlodas
+  Params: id (opt), type (opt), bypass_cache (opt), offset (opt), limit (opt)
+POST /v1/api/queued/controlqueued - Control Queued
+  Params: body:operation (req), body:queued_id (opt), body:all (opt)

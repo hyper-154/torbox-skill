@@ -1,11 +1,11 @@
 ---
 name: torbox
-description: Interact with Torbox API for torrents, Usenet, web downloads, and cloud integrations using pure HTTP API calls. Use when managing downloads, checking cache status, uploading to cloud storage, or automating Torbox workflows. Supports torrent creation/management, usenet downloads, web downloads, RSS feeds, queued downloads, user account operations, and integrations with Google Drive, Dropbox, OneDrive, and more.
+description: Interact with Torbox API for torrents, Usenet, web downloads, search engines, streaming, and cloud integrations using pure HTTP API calls. Use when managing downloads, checking cache status, uploading to cloud storage, or automating Torbox workflows. Supports torrent creation/management, usenet downloads, web downloads, RSS feeds, queued downloads, user account operations, device auth, search engines, streaming, and integrations with Google Drive, Dropbox, OneDrive, and more.
 ---
 
 # Torbox API Skill
 
-Pure HTTP API for managing torrents, Usenet, web downloads, and cloud integrations through Torbox. No SDK dependencies required.
+Pure HTTP API for managing torrents, Usenet, web downloads, search engines, streaming, and cloud integrations through Torbox. No SDK dependencies required.
 
 ## Base URL
 
@@ -75,8 +75,8 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ```
 IF user.plan == "free":
     - ❌ NO API ACCESS — Cannot use this skill
-    - Limited to 10 downloads per month
-    - Must upgrade to Essential+ for API access
+    - Limited to exactly 10 downloads per month
+    - Must upgrade to Essential+ for API access and unlimited downloads
 
 IF user.plan == "essential":
     - Max 3 concurrent downloads
@@ -115,19 +115,20 @@ import urllib.request
 import urllib.parse
 import json
 
-# Use environment variable for security
-TORBOX_TOKEN = os.environ.get("TORBOX_API_KEY")
-if not TORBOX_TOKEN:
-    raise RuntimeError("Set TORBOX_API_KEY environment variable")
+def api_call(method: str, endpoint: str, data: dict = None, params: dict = None) -> dict:
+    """
+    Make an API call to Torbox with proper error handling.
+    """
+    torbox_token = os.environ.get("TORBOX_API_KEY")
+    if not torbox_token:
+        raise RuntimeError("Set TORBOX_API_KEY environment variable")
 
-def api_call(method, endpoint, data=None, params=None):
-    """Make an API call with proper error handling."""
     url = f"https://api.torbox.app{endpoint}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
     
     req = urllib.request.Request(url, method=method)
-    req.add_header("Authorization", f"Bearer {TORBOX_TOKEN}")
+    req.add_header("Authorization", f"Bearer {torbox_token}")
     
     if data:
         req.add_header("Content-Type", "application/json")
@@ -145,31 +146,13 @@ def api_call(method, endpoint, data=None, params=None):
         raise
 
 # Check plan before any operation
-user = api_call("GET", "/v1/api/user/me", params={"settings": True})
+user = api_call("GET", "/v1/api/user/me", params={"settings": "true"})
 print(f"Plan: {user['data']['plan']}")
 print(f"Active: {user['data']['active_downloads']}/{user['data']['max_downloads']}")
 
 if user['data']['plan'] != 'pro':
     print("WARNING: Usenet requires Pro plan")
 ```
-
----
-
-## Services Overview
-
-| Service | Description | Plan Required |
-|---------|-------------|---------------|
-| **General** | API status, stats, changelogs, speedtest | Any (unauth) |
-| **Torrents** | Create, control, list, check cache, download | Essential+ |
-| **Usenet** | Create, control, list, check cache NZB | **Pro only** |
-| **Web Downloads** | Create, control, list web downloads | Essential+ |
-| **Queued** | Manage queued downloads | Essential+ |
-| **User** | User info, referrals, subscriptions | Essential+ |
-| **RSS** | Manage RSS feeds | Essential+ (Pro=unlimited) |
-| **Integrations** | Upload to cloud storage | Essential+ |
-| **Notifications** | Get and clear notifications | Essential+ |
-
-⚠️ **Free plan has NO API access** — Must upgrade to Essential ($3/mo) or higher.
 
 ---
 
@@ -182,19 +165,13 @@ Unauthenticated endpoints for API health and info.
 ```bash
 curl https://api.torbox.app/
 ```
-
-```python
-import urllib.request
-import json
-
-req = urllib.request.Request("https://api.torbox.app/")
-try:
-    with urllib.request.urlopen(req) as resp:
-        print(json.loads(resp.read().decode()))
-except urllib.error.HTTPError as e:
-    print(f"HTTP Error: {e.code}")
-except urllib.error.URLError as e:
-    print(f"Connection error: {e.reason}")
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": "API is online",
+  "detail": "Welcome to Torbox API"
+}
 ```
 
 ### Get Stats
@@ -202,19 +179,16 @@ except urllib.error.URLError as e:
 ```bash
 # All-time stats
 curl https://api.torbox.app/v1/api/stats
-
-# Last 30 days
-curl https://api.torbox.app/v1/api/stats/30days
 ```
-
-### Get Changelogs
-
-```bash
-# RSS format
-curl https://api.torbox.app/v1/api/changelogs/rss
-
-# JSON format
-curl https://api.torbox.app/v1/api/changelogs/json
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total_users": 50000,
+    "total_torrents": 1200000
+  }
+}
 ```
 
 ### Speedtest Files
@@ -224,10 +198,114 @@ curl "https://api.torbox.app/v1/api/speedtest?test_length=short&region=all"
 ```
 
 **Parameters:**
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `test_length` | string | No | `short` or `long` |
-| `region` | string | No | CDN region (omit to get all available) |
+| Name | In | Type | Required | Description |
+|------|----|------|----------|-------------|
+| `test_length` | query | string | No | `short` or `long` |
+| `region` | query | string | No | CDN region (omit to get all available) |
+
+---
+
+## User Service
+
+Manage user account, subscriptions, devices, and search engines.
+
+### Refresh Token
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"session_token": "YOUR_SESSION_TOKEN"}' \
+  https://api.torbox.app/v1/api/user/refreshtoken
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `session_token` | body | string | Yes | Your current session token |
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": "NEW_TOKEN_STRING"
+}
+```
+
+### Device Authentication (OAuth)
+
+Used for TV apps or CLI tools to login without entering passwords.
+
+```bash
+# 1. Start Device Auth
+curl "https://api.torbox.app/v1/api/user/auth/device/start?app=MyApp"
+
+# Returns {"data": {"device_code": "ABCDEF", "user_code": "12345", "verification_uri": "https://torbox.app/device"}}
+
+# 2. Poll for Token (until user authorizes)
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"device_code": "ABCDEF"}' \
+  https://api.torbox.app/v1/api/user/auth/device/token
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `app` | query | string | No | App name (default: "Third Party App") |
+| `device_code` | body | string | Yes | Device code from start endpoint |
+
+### Add Referral
+
+```bash
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://api.torbox.app/v1/api/user/addreferral?referral=REFERRAL_CODE"
+```
+
+### Delete Account
+
+```bash
+# 1. Get confirmation code
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/user/getconfirmation
+
+# 2. Confirm deletion
+curl -X DELETE \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"session_token": "YOUR_TOKEN", "confirmation_code": 123456}' \
+  https://api.torbox.app/v1/api/user/deleteme
+```
+
+### Subscriptions & Transactions
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/user/subscriptions
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/user/transactions
+curl -H "Authorization: Bearer YOUR_TOKEN" "https://api.torbox.app/v1/api/user/transaction/pdf?transaction_id=xyz" -o receipt.pdf
+```
+
+### Search Engines
+
+Configure search engines like Prowlarr, Jackett, or NZBHydra.
+
+```bash
+# Get Search Engines
+curl -H "Authorization: Bearer YOUR_TOKEN" "https://api.torbox.app/v1/api/user/settings/searchengines"
+
+# Add Search Engine
+curl -X PUT -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" \
+  -d '{"type": "prowlarr", "url": "http://prowlarr:9696", "apikey": "key", "download_type": "torrents"}' \
+  https://api.torbox.app/v1/api/user/settings/addsearchengines
+
+# Modify Search Engine
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" \
+  -d '{"id": 1, "type": "prowlarr", "url": "http://prowlarr:9696", "apikey": "key", "download_type": "torrents"}' \
+  https://api.torbox.app/v1/api/user/settings/modifysearchengines
+
+# Control Search Engine
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" \
+  -d '{"operation": "enable", "id": 1, "all": false}' \
+  https://api.torbox.app/v1/api/user/settings/controlsearchengines
+```
 
 ---
 
@@ -259,35 +337,57 @@ curl -X POST \
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `magnet` | string | No | Magnet link (required if `file` not provided) |
-| `file` | file | No | .torrent file (required if `magnet` not provided) |
-| `seed` | integer | No | Seed ratio limit |
-| `allow_zip` | boolean | No | Allow zip output (default: `true`) |
-| `name` | string | No | Custom name |
-| `as_queued` | boolean | No | Add to queue if slots full (default: `false`) |
-| `add_only_if_cached` | boolean | No | Only add if cached (default: `false`) |
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `magnet` | formData | string | No | Magnet link (required if `file` not provided) |
+| `file` | formData | file | No | .torrent file (required if `magnet` not provided) |
+| `seed` | formData | integer | No | Seed ratio limit |
+| `allow_zip` | formData | boolean | No | Allow zip output (default: `true`) |
+| `name` | formData | string | No | Custom name |
+| `as_queued` | formData | boolean | No | Add to queue if slots full (default: `false`) |
+| `add_only_if_cached` | formData | boolean | No | Only add if cached (default: `false`) |
 
-**Performance Tip:** Use `add_only_if_cached=true` to avoid wasting slots on non-cached torrents.
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "torrent_id": 98765,
+    "name": "My Torrent",
+    "hash": "abc123def456"
+  }
+}
+```
+
+**Async version:** `POST /v1/api/torrents/asynccreatetorrent` (returns immediately, processes in background. Same parameters.)
+
+### Edit Torrent
 
 ```bash
-# Check cache first, then add
+curl -X PUT \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"torrent_id": 123, "name": "New Name"}' \
+  https://api.torbox.app/v1/api/torrents/edittorrent
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `torrent_id` | body | integer | Yes | Torrent ID |
+| `name` | body | string | No | New name |
+| `tags` | body | array | No | Tags list |
+| `alternative_hashes` | body | array | No | Alternate hashes |
+
+### Magnet to File
+
+```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"hashes":["ABC123..."]}' \
-  "https://api.torbox.app/v1/api/torrents/checkcached?format=object"
-
-# If cached, safe to add
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "magnet=magnet:?xt=urn:btih:ABC123..." \
-  -F "add_only_if_cached=true" \
-  https://api.torbox.app/v1/api/torrents/createtorrent
+  -d '{"magnet": "magnet:?xt=urn:btih:..."}' \
+  https://api.torbox.app/v1/api/torrents/magnettofile
 ```
-
-**Async version:** `POST /v1/api/torrents/asynccreatetorrent` (returns immediately, processes in background)
 
 ### Control Torrent
 
@@ -299,12 +399,12 @@ curl -X POST \
   https://api.torbox.app/v1/api/torrents/controltorrent
 ```
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `operation` | string | Yes | `reannounce`, `delete`, or `resume` |
-| `torrent_id` | integer | No | Torrent ID (omit if `all=true`) |
-| `all` | boolean | No | Apply to all torrents (default: `false`) |
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `operation` | body | string | Yes | `reannounce`, `delete`, or `resume` |
+| `torrent_id` | body | integer | No | Torrent ID (omit if `all=true`) |
+| `all` | body | boolean | No | Apply to all torrents (default: `false`) |
 
 ### Get Torrent List
 
@@ -314,24 +414,18 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `offset` | integer | No | Pagination offset (default: `0`) |
-| `limit` | integer | No | Max items to return (default: `1000`, max: `1000`) |
-| `id` | integer | No | Filter by specific torrent ID |
-| `bypass_cache` | boolean | No | Skip cache (default: `false`) |
-
-**Download States:**
-- `downloading` — Currently downloading
-- `uploading` — Currently seeding
-- `stalled (no seeds)` — No seeds available
-- `paused` — Paused
-- `completed` — Downloaded (use `cached` for completion status)
-- `cached` — Available on server
-- `metaDL` — Downloading metadata (qBittorrent state)
-- `checkingResumeData` — Checking resumable data (qBittorrent state)
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `offset` | query | integer | No | Pagination offset (default: `0`) |
+| `limit` | query | integer | No | Max items to return (default: `1000`, max: `1000`) |
+| `id` | query | integer | No | Filter by specific torrent ID |
+| `bypass_cache` | query | boolean | No | Skip cache (default: `false`) |
 
 ### Check Cached
+
+Content-Type conflicts are solved via HTTP method context:
+- `GET` uses query string lists.
+- `POST` uses `application/json`.
 
 ```bash
 curl -X POST \
@@ -342,16 +436,18 @@ curl -X POST \
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `hashes` | array | Yes | Array of torrent hashes (max 100) |
-| `format` | string | No | `object` or `list` (default: `object`) |
-| `list_files` | boolean | No | Include file list (default: `false`) |
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `hashes` | body | array | Yes | Array of torrent hashes (max 100) |
+| `format` | query | string | No | `object` or `list` (default: `object`) |
+| `list_files` | query | boolean | No | Include file list (default: `false`) |
 
-**Notes:**
-- Max ~100 hashes per request
-- Fast lookup (<1s per 100 hashes)
-- 1-hour cache on server
+### Get Queued Torrents
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://api.torbox.app/v1/api/torrents/getqueued"
+```
 
 ### Request Download Link
 
@@ -366,70 +462,52 @@ user_ip=YOUR_IP"
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `token` | string | Yes | Your API key |
-| `torrent_id` | integer | Yes | The torrent ID |
-| `file_id` | integer | No | Specific file index (default: `0` = all files as zip if `zip_link=true`) |
-| `zip_link` | boolean | No | Return as zip (default: `false`) |
-| `redirect` | boolean | No | Return direct URL (default: `false`) |
-| `user_ip` | string | No | Your IP for CDN selection |
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `token` | query | string | Yes | Your API key |
+| `torrent_id` | query | integer | Yes | The torrent ID |
+| `file_id` | query | integer | No | Specific file index (default: `0` = all files as zip if `zip_link=true`) |
+| `zip_link` | query | boolean | No | Return as zip (default: `false`) |
+| `redirect` | query | boolean | No | Return direct URL (default: `false`) |
+| `user_ip` | query | string | No | Your IP for CDN selection |
 
-**Important:** `file_id=0` with `zip_link=false` returns the first file only. Use `zip_link=true` to get all files as a zip.
-
-**Permalink for direct access:**
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": "https://cdn1.torbox.app/download/..."
+}
 ```
-https://api.torbox.app/v1/api/torrents/requestdl?\
-  token=YOUR_TOKEN&\
-  torrent_id=NUMBER&\
-  file_id=NUMBER&\
-  redirect=true
-```
-
-- Link valid for 3 hours to START download
-- Once started, unlimited time to complete
-- Use `redirect=true` for permanent permalinks
 
 ### Get Torrent Info
 
 ```bash
-# By hash
-curl "https://api.torbox.app/v1/api/torrents/torrentinfo?\
-hash=ABC123...&\
-timeout=30&\
-use_cache_lookup=false"
-
-# By POST with magnet/file
+# By POST with magnet/file (multipart)
 curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -F "magnet=magnet:?xt=urn:btih:..." \
   https://api.torbox.app/v1/api/torrents/torrentinfo
+
+# By GET with hash (query)
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://api.torbox.app/v1/api/torrents/torrentinfo?hash=ABC123&timeout=30"
 ```
 
-**Parameters (GET):**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `hash` | string | Yes | Torrent hash |
-| `timeout` | integer | No | Timeout in seconds (default: `30`) |
-| `use_cache_lookup` | boolean | No | Use cached data (default: `false`) |
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `hash` | query | string | No | Torrent hash (for GET) |
+| `timeout` | query | integer | No | Timeout in seconds (for GET, default: `30`) |
+| `use_cache_lookup` | query | boolean | No | Use cached data (for GET, default: `false`) |
+| `magnet` | formData| string | No | Magnet link (for POST) |
+| `file` | formData| file | No | .torrent file (for POST) |
 
 ### Export Torrent Data
 
 ```bash
-# Export as magnet link
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://api.torbox.app/v1/api/torrents/exportdata?torrent_id=123&type=magnet"
-
-# Export as .torrent file
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/torrents/exportdata?torrent_id=123&type=file" \
-  -o download.torrent
 ```
-
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `torrent_id` | integer | Yes | Torrent ID |
-| `type` | string | Yes | `magnet` or `file` |
 
 ---
 
@@ -437,75 +515,27 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ⚠️ **PRO PLAN ONLY** — Will fail with error on Free/Essential/Standard plans.
 
-### Pre-Flight Check
-
-```python
-import os
-import urllib.request
-import urllib.error
-import json
-
-TORBOX_TOKEN = os.environ.get("TORBOX_API_KEY")
-if not TORBOX_TOKEN:
-    raise RuntimeError("Set TORBOX_API_KEY environment variable")
-
-def check_pro_plan():
-    req = urllib.request.Request(
-        "https://api.torbox.app/v1/api/user/me",
-        headers={"Authorization": f"Bearer {TORBOX_TOKEN}"}
-    )
-    try:
-        with urllib.request.urlopen(req) as resp:
-            user = json.loads(resp.read().decode())
-            if user['data']['plan'] not in ['pro', 'premium']:
-                print("ERROR: Usenet requires Pro plan")
-                return False
-            return True
-    except urllib.error.HTTPError as e:
-        print(f"HTTP Error: {e.code}")
-        return False
-    except urllib.error.URLError as e:
-        print(f"Connection error: {e.reason}")
-        return False
-
-if not check_pro_plan():
-    exit(1)
-```
-
 ### Create Usenet Download
 
 Uses `multipart/form-data` for NZB file uploads.
 
-**Using NZB Link:**
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "link=https://example.com/file.nzb" \
   -F "name=My Download" \
-  -F "password=optional" \
-  https://api.torbox.app/v1/api/usenet/createusenetdownload
-```
-
-**Using NZB File:**
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@/path/to/file.nzb" \
   https://api.torbox.app/v1/api/usenet/createusenetdownload
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `link` | string | No | NZB link (required if `file` not provided) |
-| `file` | file | No | NZB file (required if `link` not provided) |
-| `name` | string | No | Custom name |
-| `password` | string | No | Password |
-| `post_processing` | integer | No | Post-processing option (default: `-1`) |
-| `as_queued` | boolean | No | Add to queue (default: `false`) |
-| `add_only_if_cached` | boolean | No | Only add if cached (default: `false`) |
-
-**Async:** `POST /v1/api/usenet/asynccreateusenetdownload`
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `link` | formData | string | No | NZB link (required if `file` not provided) |
+| `file` | formData | file | No | NZB file (required if `link` not provided) |
+| `name` | formData | string | No | Custom name |
+| `password` | formData | string | No | Password |
+| `post_processing` | formData | integer | No | Post-processing option (default: `-1`) |
+| `as_queued` | formData | boolean | No | Add to queue (default: `false`) |
 
 ### Control Usenet Download
 
@@ -517,12 +547,12 @@ curl -X POST \
   https://api.torbox.app/v1/api/usenet/controlusenetdownload
 ```
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `operation` | string | Yes | `delete`, `pause`, or `resume` |
-| `usenet_id` | integer | No | Usenet download ID |
-| `all` | boolean | No | Apply to all (default: `false`) |
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `operation` | body | string | Yes | `delete`, `pause`, or `resume` |
+| `usenet_id` | body | integer | No | Usenet download ID |
+| `all` | body | boolean | No | Apply to all (default: `false`) |
 
 ### Get Usenet List
 
@@ -531,42 +561,13 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://api.torbox.app/v1/api/usenet/mylist?offset=0&limit=50"
 ```
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `offset` | integer | No | Pagination offset (default: `0`) |
-| `limit` | integer | No | Max items (default: `1000`) |
-| `id` | integer | No | Filter by specific ID |
-
-### Request Download Link
-
-```bash
-curl "https://api.torbox.app/v1/api/usenet/requestdl?\
-token=YOUR_TOKEN&\
-usenet_id=123&\
-file_id=0&\
-zip_link=false&\
-redirect=false"
-```
-
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `token` | string | Yes | API key |
-| `usenet_id` | integer | Yes | Usenet download ID |
-| `file_id` | integer | No | File index (default: `0`) |
-| `zip_link` | boolean | No | Return as zip (default: `false`) |
-| `redirect` | boolean | No | Return direct URL (default: `false`) |
-
 ---
 
 ## Web Downloads Service
 
-Requires Essential+ plan.
-
 ### Create Web Download
 
-Uses `application/x-www-form-urlencoded` (different from Torrents/Usenet which use `multipart/form-data` for file uploads).
+Uses `application/x-www-form-urlencoded`.
 
 ```bash
 curl -X POST \
@@ -579,21 +580,12 @@ curl -X POST \
 ```
 
 **Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `link` | string | **Yes** | Download URL |
-| `password` | string | No | Password |
-| `name` | string | No | Custom name |
-| `as_queued` | boolean | No | Add to queue (default: `false`) |
-| `add_only_if_cached` | boolean | No | Only add if cached (default: `false`) |
-
-**Note:** Web Downloads use `application/x-www-form-urlencoded` because they don't support file uploads (unlike Torrents and Usenet which accept `.torrent` and `.nzb` files).
-
-### Get Supported Hosters
-
-```bash
-curl https://api.torbox.app/v1/api/webdl/hosters
-```
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `link` | formData| string | **Yes**| Download URL |
+| `password` | formData| string | No | Password |
+| `name` | formData| string | No | Custom name |
+| `as_queued` | formData| boolean| No | Add to queue (default: `false`) |
 
 ### Control Web Download
 
@@ -605,13 +597,6 @@ curl -X POST \
   https://api.torbox.app/v1/api/webdl/controlwebdownload
 ```
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `operation` | string | Yes | `delete`, `pause`, or `resume` |
-| `webdl_id` | integer | No | Web download ID |
-| `all` | boolean | No | Apply to all (default: `false`) |
-
 ### Get Web Download List
 
 ```bash
@@ -619,119 +604,16 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://api.torbox.app/v1/api/webdl/mylist?offset=0&limit=50"
 ```
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `offset` | integer | No | Pagination offset (default: `0`) |
-| `limit` | integer | No | Max items (default: `1000`) |
-| `id` | integer | No | Filter by specific ID |
-| `bypass_cache` | boolean | No | Skip cache (default: `false`) |
-
-### Request Download Link
+### Request Web Download Link
 
 ```bash
-curl "https://api.torbox.app/v1/api/webdl/requestdl?\
-token=YOUR_TOKEN&\
-web_id=123&\
-file_id=0&\
-zip_link=false&\
-redirect=false&\
-user_ip=YOUR_IP"
+curl "https://api.torbox.app/v1/api/webdl/requestdl?token=YOUR_TOKEN&web_id=123"
 ```
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `token` | string | Yes | API key |
-| `web_id` | integer | Yes | Web download ID |
-| `file_id` | integer | No | File index (default: `0`) |
-| `zip_link` | boolean | No | Return as zip (default: `false`) |
-| `redirect` | boolean | No | Return direct URL (default: `false`) |
-| `user_ip` | string | No | Your IP for CDN selection |
-
----
-
-## Queued Service
-
-### Get Queued Downloads
+### Get Supported Hosters
 
 ```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/queued/getqueued?type=torrent&offset=0&limit=50"
-```
-
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `type` | string | No | `torrent`, `usenet`, or `webdl` (default: `torrent`) |
-| `offset` | integer | No | Pagination offset (default: `0`) |
-| `limit` | integer | No | Max items (default: `1000`) |
-| `id` | integer | No | Filter by specific ID |
-| `bypass_cache` | boolean | No | Skip cache (default: `false`) |
-
-### Control Queued
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"operation": "delete", "queued_id": 123}' \
-  https://api.torbox.app/v1/api/queued/controlqueued
-```
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `operation` | string | Yes | `delete`, `pause`, or `resume` |
-| `queued_id` | integer | No | Queued item ID |
-| `all` | boolean | No | Apply to all (default: `false`) |
-
----
-
-## User Service
-
-### Get User Info
-
-```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/user/me?settings=true"
-```
-
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `settings` | boolean | No | Include settings (default: `false`) |
-
-**Key Fields in Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": 12345,
-    "email": "user@example.com",
-    "plan": "pro",              // "free", "essential", "standard", "pro"
-    "active_downloads": 3,
-    "max_downloads": 10,        // Plan limit
-    "storage_used": 1073741824  // Bytes used
-  }
-}
-```
-
-### Subscriptions & Transactions
-
-```bash
-# Get subscriptions
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/user/subscriptions
-
-# Get transactions
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/user/transactions
-
-# Get transaction as PDF
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/user/transaction/pdf?transaction_id=xyz" \
-  -o receipt.pdf
+curl https://api.torbox.app/v1/api/webdl/hosters
 ```
 
 ---
@@ -749,27 +631,21 @@ curl -X POST \
     "name": "My Feed",
     "do_regex": "include_pattern",
     "dont_regex": "exclude_pattern",
-    "dont_older_than": 7,
-    "pass_check": false,
     "scan_interval": 60,
-    "rss_type": "torrent",
-    "torrent_seeding": 1
+    "rss_type": "torrent"
   }' \
   https://api.torbox.app/v1/api/rss/addrss
 ```
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `url` | string | **Yes** | RSS feed URL |
-| `name` | string | **Yes** | Feed name |
-| `do_regex` | string | No | Include pattern regex |
-| `dont_regex` | string | No | Exclude pattern regex |
-| `dont_older_than` | integer | No | Skip items older than N days |
-| `pass_check` | boolean | No | Pass password check (default: `false`) |
-| `scan_interval` | integer | No | Scan interval in minutes (default: `60`) |
-| `rss_type` | string | No | `torrent` or `usenet` (default: `torrent`) |
-| `torrent_seeding` | integer | No | Seed ratio limit (default: `1`) |
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `url` | body | string | **Yes** | RSS feed URL |
+| `name` | body | string | **Yes** | Feed name |
+| `do_regex` | body | string | No | Include pattern regex |
+| `dont_regex` | body | string | No | Exclude pattern regex |
+| `scan_interval` | body | integer| No | Scan interval in minutes (default: `60`) |
+| `rss_type` | body | string | No | `torrent` or `usenet` (default: `torrent`) |
 
 ### Control RSS Feed
 
@@ -781,43 +657,35 @@ curl -X POST \
   https://api.torbox.app/v1/api/rss/controlrss
 ```
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `operation` | string | Yes | `delete`, `pause`, or `resume` |
-| `rss_feed_id` | integer | Yes | RSS feed ID |
-
-### Get RSS Feeds
+### Get RSS Feeds & Items
 
 ```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/rss/getfeeds?id="
+curl -H "Authorization: Bearer YOUR_TOKEN" "https://api.torbox.app/v1/api/rss/getfeeds"
+curl -H "Authorization: Bearer YOUR_TOKEN" "https://api.torbox.app/v1/api/rss/getfeeditems?rss_feed_id=123"
 ```
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | No | Filter by specific feed ID |
+---
 
-### Get RSS Feed Items
+## Streaming Service
+
+### Create Stream & Get Data
 
 ```bash
+# 1. Create Stream
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  "https://api.torbox.app/v1/api/rss/getfeeditems?rss_feed_id=123"
-```
+  "https://api.torbox.app/v1/api/stream/createstream?id=123&type=torrent&file_id=0"
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `rss_feed_id` | integer | **Yes** | RSS feed ID |
+# 2. Get Stream Data (Playback URL)
+curl "https://api.torbox.app/v1/api/stream/getstreamdata?token=YOUR_TOKEN&presigned_token=abc123def456"
+```
 
 ---
 
 ## Integrations Service
 
-Upload downloads to cloud storage.
+Upload downloads to cloud storage. Supported platforms: `googledrive`, `dropbox`, `onedrive`, `gofile`, `1fichier`, `pixeldrain`.
 
-### Upload to Google Drive
+### Upload to Cloud
 
 ```bash
 curl -X POST \
@@ -833,327 +701,24 @@ curl -X POST \
   https://api.torbox.app/v1/api/integration/googledrive
 ```
 
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | **Yes** | Torrent/Usenet/Web download ID |
-| `file_id` | integer | No | File index (default: `0` = all files) |
-| `zip` | boolean | No | Upload as zip (default: `false`) |
-| `type` | string | No | `torrent`, `usenet`, or `webdl` (default: `torrent`) |
-| `google_token` | string | **Yes** | Google OAuth token |
-
-### Upload to Dropbox
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123,
-    "file_id": 0,
-    "zip": false,
-    "type": "torrent",
-    "dropbox_token": "DROPBOX_TOKEN"
-  }' \
-  https://api.torbox.app/v1/api/integration/dropbox
-```
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | **Yes** | Download ID |
-| `file_id` | integer | No | File index (default: `0`) |
-| `zip` | boolean | No | Upload as zip (default: `false`) |
-| `type` | string | No | `torrent`, `usenet`, or `webdl` (default: `torrent`) |
-| `dropbox_token` | string | **Yes** | Dropbox OAuth token |
-
-### Upload to OneDrive
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123,
-    "file_id": 0,
-    "zip": false,
-    "type": "torrent",
-    "onedrive_token": "ONEDRIVE_TOKEN"
-  }' \
-  https://api.torbox.app/v1/api/integration/onedrive
-```
-
-**Request Body:** Same as Dropbox with `onedrive_token`.
-
-### Upload to GoFile
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123,
-    "file_id": 0,
-    "zip": false,
-    "type": "torrent",
-    "gofile_token": "GOFILE_TOKEN"
-  }' \
-  https://api.torbox.app/v1/api/integration/gofile
-```
-
-**Note:** `gofile_token` is optional (for authenticated uploads).
-
-### Upload to 1Fichier
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123,
-    "file_id": 0,
-    "zip": false,
-    "type": "torrent",
-    "onefichier_token": "ONEFICHIER_TOKEN"
-  }' \
-  https://api.torbox.app/v1/api/integration/1fichier
-```
-
-### Upload to Pixeldrain
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123,
-    "file_id": 0,
-    "zip": false,
-    "type": "torrent",
-    "pixeldrain_token": "PIXELDRAIN_TOKEN"
-  }' \
-  https://api.torbox.app/v1/api/integration/pixeldrain
-```
-
-**Note:** `pixeldrain_token` is optional.
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `id` | body | integer | **Yes**| Download ID |
+| `file_id` | body | integer | No | File index (default: `0`) |
+| `zip` | body | boolean | No | Upload as zip (default: `false`) |
+| `type` | body | string | No | `torrent`, `usenet`, or `webdl` |
+| `{provider}_token`| body | string | **Yes**| OAuth token for respective provider |
 
 ### Manage Transfer Jobs
 
 ```bash
-# List all jobs
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/integration/jobs
-
-# Get job status
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/integration/job/123
-
-# Cancel job
-curl -X DELETE \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/integration/job/123
-
-# Get jobs by hash
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/integration/jobs/ABC123...
+curl -H "Authorization: Bearer YOUR_TOKEN" https://api.torbox.app/v1/api/integration/jobs
 ```
 
 ---
 
-## Notifications Service
-
-### Get Notifications
-
-```bash
-# JSON format
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/notifications/mynotifications
-
-# RSS format
-curl "https://api.torbox.app/v1/api/notifications/rss?token=YOUR_TOKEN"
-```
-
-### Clear Notifications
-
-```bash
-# Clear all
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/notifications/clear
-
-# Clear specific
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.torbox.app/v1/api/notifications/clear/123
-```
-
----
-
-## Performance Optimization
-
-### For Essential/Standard Plans
-
-While Essential+ plans have unlimited downloads, they have limited concurrent slots (3 for Essential, 5 for Standard). Use cache checks to avoid wasting slots on non-cached torrents.
-
-**1. Always check cache first:**
-```bash
-# Check cache before adding
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"hashes":["ABC123..."]}' \
-  "https://api.torbox.app/v1/api/torrents/checkcached?format=object"
-
-# Only add if cached (saves slots)
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "magnet=magnet:?xt=urn:btih:ABC123..." \
-  -F "add_only_if_cached=true" \
-  https://api.torbox.app/v1/api/torrents/createtorrent
-```
-
-**2. Monitor slot usage with error handling:**
-```python
-import os
-import urllib.request
-import urllib.parse
-import urllib.error
-import json
-
-TORBOX_TOKEN = os.environ.get("TORBOX_API_KEY")
-if not TORBOX_TOKEN:
-    raise RuntimeError("Set TORBOX_API_KEY environment variable")
-
-def get_available_slots():
-    """Get number of available concurrent download slots."""
-    req = urllib.request.Request(
-        "https://api.torbox.app/v1/api/user/me",
-        headers={"Authorization": f"Bearer {TORBOX_TOKEN}"}
-    )
-    try:
-        with urllib.request.urlopen(req) as resp:
-            user = json.loads(resp.read().decode())
-            return user['data']['max_downloads'] - user['data']['active_downloads']
-    except urllib.error.HTTPError as e:
-        print(f"HTTP Error: {e.code}")
-        return None
-    except urllib.error.URLError as e:
-        print(f"Connection error: {e.reason}")
-        return None
-
-slots = get_available_slots()
-if slots is not None:
-    print(f"Available slots: {slots}")
-```
-
-**3. Use queue for overflow:**
-```bash
-# If slots full, add to queue instead
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "magnet=magnet:?xt=urn:btih:..." \
-  -F "as_queued=true" \
-  https://api.torbox.app/v1/api/torrents/createtorrent
-```
-
-### Batch Operations
-
-```bash
-# Batch cache checks (max 100 hashes)
-curl -X POST \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"hashes":["hash1","hash2",...,"hash100"]}' \
-  "https://api.torbox.app/v1/api/torrents/checkcached"
-```
-
-### Polling Strategy with Error Handling
-
-```python
-import os
-import time
-import urllib.request
-import urllib.error
-import json
-
-TORBOX_TOKEN = os.environ.get("TORBOX_API_KEY")
-if not TORBOX_TOKEN:
-    raise RuntimeError("Set TORBOX_API_KEY environment variable")
-
-def wait_for_cached(torrent_id, timeout=300, interval=10):
-    """Wait for torrent to become cached.
-    
-    Args:
-        torrent_id: The torrent ID to check
-        timeout: Maximum time to wait in seconds (default: 300)
-        interval: Seconds between checks (default: 10)
-    
-    Returns:
-        Torrent data dict when cached
-    
-    Raises:
-        TimeoutError: If timeout reached before cached
-        HTTPError: If API returns error
-        URLError: If connection fails
-    """
-    start = time.time()
-    attempt = 0
-    
-    while time.time() - start < timeout:
-        attempt += 1
-        try:
-            req = urllib.request.Request(
-                f"https://api.torbox.app/v1/api/torrents/mylist?id={torrent_id}",
-                headers={"Authorization": f"Bearer {TORBOX_TOKEN}"}
-            )
-            with urllib.request.urlopen(req) as resp:
-                data = json.loads(resp.read().decode())
-                
-                # Validate response structure
-                if 'data' not in data:
-                    raise ValueError(f"Unexpected response: {data}")
-                
-                # Handle list response (mylist returns a list even with id filter)
-                torrent_list = data['data']
-                if isinstance(torrent_list, list):
-                    if len(torrent_list) == 0:
-                        raise ValueError(f"Torrent {torrent_id} not found")
-                    torrent_data = torrent_list[0]
-                else:
-                    torrent_data = torrent_list
-                
-                # Check download state
-                if torrent_data.get('download_state') == 'cached':
-                    return torrent_data
-                
-                print(f"Attempt {attempt}: State is {torrent_data.get('download_state')}, waiting...")
-                
-        except urllib.error.HTTPError as e:
-            print(f"HTTP Error on attempt {attempt}: {e.code}")
-            raise
-        except urllib.error.URLError as e:
-            print(f"Connection error on attempt {attempt}: {e.reason}")
-            raise
-        
-        # Exponential backoff with jitter
-        sleep_time = min(interval * (1.5 ** (attempt - 1)), 60)
-        time.sleep(sleep_time)
-    
-    raise TimeoutError(f"Torrent {torrent_id} did not become cached within {timeout} seconds")
-
-# Usage
-try:
-    result = wait_for_cached(12345, timeout=600)
-    print(f"Torrent cached: {result}")
-except TimeoutError as e:
-    print(f"Timeout: {e}")
-except Exception as e:
-    print(f"Error: {e}")
-```
-
----
-
-## Response Format
+## Error Handling
 
 All responses follow this structure:
 
@@ -1184,79 +749,3 @@ All responses follow this structure:
 | `PLAN_RESTRICTION` | Feature requires higher plan |
 | `SLOTS_FULL` | Concurrent download limit reached |
 | `FILE_TOO_LARGE` | Exceeds plan size limit |
-
----
-
-## Rate Limits
-
-| Endpoint | Limit | Notes |
-|----------|-------|-------|
-| Test notification | 1/minute | Hard limit |
-| Cache checks | 5/second | Be reasonable; cache results for 1 hour |
-| List endpoints | 1/second | Avoid rapid polling |
-| Download requests | Metered | Based on plan; respect `Retry-After` header |
-| General API | - | Be polite; implement exponential backoff on 429 |
-
-**Handling 429 Responses:**
-```python
-import time
-
-def api_call_with_backoff(req, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            with urllib.request.urlopen(req) as resp:
-                return json.loads(resp.read().decode())
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                # Get Retry-After header if available
-                retry_after = int(e.headers.get('Retry-After', 5))
-                print(f"Rate limited. Waiting {retry_after}s...")
-                time.sleep(retry_after)
-                continue
-            raise
-    raise Exception("Max retries exceeded")
-```
-
----
-
-## Troubleshooting
-
-### "Usenet not working"
-- Check plan: Must be `pro`
-- Non-Pro plans get permission errors
-- Verify with: `GET /v1/api/user/me`
-
-### "Cannot add more torrents"
-- Check active downloads vs plan limit
-- Use `as_queued=true` or delete old torrents
-- Essential: Max 3 concurrent
-- Standard: Max 5 concurrent
-- Pro: Max 10 concurrent
-
-### "Download link expired"
-- Links valid for 3 hours to START download
-- Once started, unlimited time to complete
-- Request new link or use permalinks with `redirect=true`
-
-### "File too large"
-- Free: 10GB max
-- Essential/Standard: 200GB max
-- Pro: 1TB max
-- Check file size before adding
-
-### Slow speeds
-- Free: 250Mbps
-- Essential/Standard: 1Gbps
-- Pro: 80Gbps
-- Use speedtest endpoint: `GET /v1/api/speedtest`
-- Try different CDN via `user_ip` parameter
-
-### "API authentication failed"
-- Free plan has NO API access
-- Must upgrade to Essential ($3/mo) or higher
-- Check plan: `GET /v1/api/user/me`
-
-### "Connection refused" or timeout
-- Check if TorBox API is up: `GET /`
-- Check your internet connection
-- Verify firewall/proxy settings
