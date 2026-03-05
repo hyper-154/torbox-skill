@@ -561,6 +561,72 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
   "https://api.torbox.app/v1/api/usenet/mylist?offset=0&limit=50"
 ```
 
+### Request Usenet Download Link
+
+```bash
+curl "https://api.torbox.app/v1/api/usenet/requestdl?\
+token=YOUR_TOKEN&\
+usenet_id=123&\
+file_id=0&\
+zip_link=false&\
+redirect=false"
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `token` | query | string | Yes | API key |
+| `usenet_id` | query | integer | Yes | Usenet download ID |
+| `file_id` | query | integer | No | File index (default: `0`) |
+| `zip_link` | query | boolean | No | Return as zip (default: `false`) |
+| `redirect` | query | boolean | No | Return direct URL (default: `false`) |
+
+### Check Cached Usenet
+
+```bash
+# POST with JSON body
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"hashes": ["abc123..."]}' \
+  "https://api.torbox.app/v1/api/usenet/checkcached?format=object"
+
+# GET with query params
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://api.torbox.app/v1/api/usenet/checkcached?hash=abc123&format=object"
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `hashes` | body | array | Yes (POST) | Array of hashes (max 100) |
+| `hash` | query | string/array | Yes (GET) | Hash or comma-separated hashes |
+| `format` | query | string | No | `object` or `list` (default: `object`) |
+| `list_files` | query | boolean | No | Include file list (default: `false`) |
+
+### Edit Usenet Download
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usenet_download_id": 123,
+    "name": "New Name",
+    "tags": ["tag1", "tag2"],
+    "alternative_hashes": ["hash1", "hash2"]
+  }' \
+  https://api.torbox.app/v1/api/usenet/editusenetdownload
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `usenet_download_id` | body | integer | Yes | Usenet download ID |
+| `name` | body | string | No | New name |
+| `tags` | body | array | No | Array of tag strings |
+| `alternative_hashes` | body | array | No | Array of alternative hash strings |
+
 ---
 
 ## Web Downloads Service
@@ -616,6 +682,52 @@ curl "https://api.torbox.app/v1/api/webdl/requestdl?token=YOUR_TOKEN&web_id=123"
 curl https://api.torbox.app/v1/api/webdl/hosters
 ```
 
+### Check Cached Web Download
+
+```bash
+# POST with JSON body
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"hashes": ["abc123..."]}' \
+  "https://api.torbox.app/v1/api/webdl/checkcached?format=object"
+
+# GET with query params
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://api.torbox.app/v1/api/webdl/checkcached?hash=abc123&format=object"
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `hashes` | body | array | Yes (POST) | Array of hashes (max 100) |
+| `hash` | query | string/array | Yes (GET) | Hash or comma-separated hashes |
+| `format` | query | string | No | `object` or `list` (default: `object`) |
+| `list_files` | query | boolean | No | Include file list (default: `false`) |
+
+### Edit Web Download
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "webdl_id": 123,
+    "name": "New Name",
+    "tags": ["tag1", "tag2"],
+    "alternative_hashes": ["hash1", "hash2"]
+  }' \
+  https://api.torbox.app/v1/api/webdl/editwebdownload
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `webdl_id` | body | integer | Yes | Web download ID |
+| `name` | body | string | No | New name |
+| `tags` | body | array | No | Array of tag strings |
+| `alternative_hashes` | body | array | No | Array of alternative hash strings |
+
 ---
 
 ## RSS Service
@@ -657,6 +769,43 @@ curl -X POST \
   https://api.torbox.app/v1/api/rss/controlrss
 ```
 
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `operation` | body | string | Yes | `delete`, `pause`, or `resume` |
+| `rss_feed_id` | body | integer | Yes | RSS feed ID |
+
+### Modify RSS Feed
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rss_feed_id": 123,
+    "name": "Updated Feed Name",
+    "do_regex": "include_pattern",
+    "dont_regex": "exclude_pattern",
+    "scan_interval": 60,
+    "dont_older_than": 7,
+    "rss_type": "torrent",
+    "torrent_seeding": 1
+  }' \
+  https://api.torbox.app/v1/api/rss/modifyrss
+```
+
+**Parameters:**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `rss_feed_id` | body | integer | Yes | RSS feed ID |
+| `name` | body | string | No | New feed name |
+| `do_regex` | body | string | No | Include pattern regex |
+| `dont_regex` | body | string | No | Exclude pattern regex |
+| `scan_interval` | body | integer | No | Scan interval in minutes (default: `60`) |
+| `dont_older_than` | body | integer | No | Skip items older than N days |
+| `rss_type` | body | string | No | `torrent` or `usenet` (default: `torrent`) |
+| `torrent_seeding` | body | integer | No | Seed ratio limit (default: `1`) |
+
 ### Get RSS Feeds & Items
 
 ```bash
@@ -677,6 +826,68 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 # 2. Get Stream Data (Playback URL)
 curl "https://api.torbox.app/v1/api/stream/getstreamdata?token=YOUR_TOKEN&presigned_token=abc123def456"
+```
+
+---
+
+## Notifications Service
+
+Get and manage user notifications.
+
+### Get Notifications
+
+```bash
+# JSON format (authenticated)
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.torbox.app/v1/api/notifications/mynotifications
+
+# RSS format (token in query)
+curl "https://api.torbox.app/v1/api/notifications/rss?token=YOUR_TOKEN"
+```
+
+**Example Response (JSON):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "type": "download_complete",
+      "message": "Torrent 'My File' has finished downloading",
+      "created_at": "2024-01-15T10:30:00Z",
+      "read": false
+    }
+  ]
+}
+```
+
+### Clear Notifications
+
+```bash
+# Clear all notifications
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.torbox.app/v1/api/notifications/clear
+
+# Clear specific notification
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.torbox.app/v1/api/notifications/clear/123
+```
+
+**Parameters (for specific clear):**
+| Field | In | Type | Required | Description |
+|-------|----|------|----------|-------------|
+| `id` | path | string | Yes | Notification ID |
+
+### Test Notification
+
+Sends a test notification to verify your notification settings. Rate limited to 1 per minute.
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.torbox.app/v1/api/notifications/test
 ```
 
 ---
