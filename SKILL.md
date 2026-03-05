@@ -23,6 +23,92 @@ Authorization: Bearer <YOUR_API_KEY>
 
 For unauthenticated endpoints (status, stats, changelogs), no token is needed.
 
+---
+
+## STEP 1: Check User Plan (CRITICAL)
+
+**ALWAYS check the user's plan first** before performing operations. Different plans have different limitations.
+
+### Get User Info
+
+```bash
+GET /v1/api/user/me?settings=true
+```
+
+```python
+from torbox_api import TorboxApi
+sdk = TorboxApi(access_token="YOUR_TOKEN")
+user = sdk.user.get_user_data(settings=True)
+print(user.plan)  # Check plan type
+```
+
+```typescript
+const sdk = new TorboxApi({ token: 'YOUR_TOKEN' });
+const { data } = await sdk.user.getUserData({ settings: true });
+console.log(data.plan);  // Check plan type
+```
+
+### Plan Limitations
+
+| Feature | Free | Essential ($3/mo) | Standard ($5/mo) | Pro ($10/mo) |
+|---------|------|-------------------|------------------|--------------|
+| **Concurrent Files** | 1-2 | 3 | 5 | 10 |
+| **Max File Size** | Limited | 200GB | 200GB | 500GB |
+| **Seed Time** | Very limited | 24 hours | 14 days | 30 days |
+| **Max Speed** | Limited | 1 Gbit/s | 1 Gbit/s | 80 Gbit/s |
+| **Usenet Access** | ❌ NO | ❌ NO | ❌ NO | ✅ Premium servers |
+| **Web Downloads** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Storage** | Unlimited | Unlimited | Unlimited | Unlimited |
+| **Bandwidth** | Unlimited | Unlimited | Unlimited | Unlimited |
+
+### Plan-Based Decision Tree
+
+```
+IF user.plan == "free":
+    - Max 1-2 concurrent downloads
+    - CANNOT use Usenet endpoints (will fail)
+    - Limited speed and seed time
+    - Check cache before adding to save slots
+
+IF user.plan == "essential":
+    - Max 3 concurrent downloads
+    - CANNOT use Usenet endpoints (will fail)
+    - 24h seed time only
+    - 200GB max file size
+
+IF user.plan == "standard":
+    - Max 5 concurrent downloads  
+    - CANNOT use Usenet endpoints (will fail)
+    - 14 days seed time
+    - 200GB max file size
+
+IF user.plan == "pro":
+    - Max 10 concurrent downloads
+    - ✅ CAN use Usenet endpoints
+    - 30 days seed time
+    - 500GB max file size
+    - Premium Usenet servers
+```
+
+### Plan Restriction Errors
+
+If a user tries to use Pro features on lower plans:
+
+```json
+{
+  "success": false,
+  "error": "PLAN_RESTRICTION",
+  "detail": "This feature requires Pro plan"
+}
+```
+
+**Common plan errors:**
+- Usenet on non-Pro: Returns permission/upgrade error
+- Exceeding concurrent slots: New additions go to queue
+- File too large: Rejected with size limit error
+
+---
+
 ## Official SDKs
 
 ### Python SDK
@@ -67,19 +153,21 @@ const { data } = await sdk.general.getUpStatus();
 console.log(data);
 ```
 
+---
+
 ## Services Overview
 
-| Service | Description |
-|---------|-------------|
-| **General** | API status, stats, changelogs, speedtest |
-| **Torrents** | Create, control, list, check cache, download torrents |
-| **Usenet** | Create, control, list, check cache NZB downloads |
-| **Web Downloads** | Create, control, list web downloads, get hoster list |
-| **Queued** | Manage queued downloads |
-| **User** | User info, referrals, subscriptions, transactions |
-| **RSS** | Manage RSS feeds |
-| **Integrations** | Upload to cloud storage (Google Drive, Dropbox, etc.) |
-| **Notifications** | Get and clear notifications |
+| Service | Description | Plan Required |
+|---------|-------------|---------------|
+| **General** | API status, stats, changelogs, speedtest | Any (unauth) |
+| **Torrents** | Create, control, list, check cache, download | Any |
+| **Usenet** | Create, control, list, check cache NZB | **Pro only** |
+| **Web Downloads** | Create, control, list web downloads | Any |
+| **Queued** | Manage queued downloads | Any |
+| **User** | User info, referrals, subscriptions | Any |
+| **RSS** | Manage RSS feeds | Any |
+| **Integrations** | Upload to cloud storage | Any |
+| **Notifications** | Get and clear notifications | Any |
 
 ---
 
@@ -125,6 +213,8 @@ Parameters:
 
 ## Torrents Service
 
+Works on all plans. Check concurrent slot availability.
+
 ### Create Torrent
 Creates a torrent from magnet link or torrent file.
 
@@ -144,19 +234,17 @@ Content-Type: multipart/form-data
 | `as_queued` | boolean | Add to queue (default: false) |
 | `add_only_if_cached` | boolean | Only add if cached (default: false) |
 
+**Performance Tip:** Use `add_only_if_cached=true` to avoid wasting slots on non-cached torrents on free/lower plans.
+
 ```python
-# Using magnet
-result = sdk.torrents.create_torrent(magnet="magnet:?xt=urn:btih:...")
-
-# Using file
-with open("file.torrent", "rb") as f:
-    result = sdk.torrents.create_torrent(file=f)
-```
-
-```typescript
-const { data } = await sdk.torrents.createTorrent({
-  magnet: 'magnet:?xt=urn:btih:...'
-});
+# Check cache first (free plan optimization)
+cache = sdk.torrents.get_torrent_cached_availability(hash=["abc123..."])
+if cache.data:
+    # Safe to add - won't waste slot
+    result = sdk.torrents.create_torrent(magnet="magnet:?xt=urn:btih:...")
+else:
+    # May fail if no slots available on free plan
+    print("Not cached - consider checking plan slots first")
 ```
 
 **Async version:** `POST /v1/api/torrents/asynccreatetorrent` (returns immediately, processes in background)
@@ -222,6 +310,8 @@ POST /v1/api/torrents/checkcached?format=object&list_files=false
 - 1-hour cache
 - Formats: `object` or `list`
 
+**Performance Tip:** Batch hash checks. Cache the results for 1 hour to avoid redundant API calls.
+
 ```python
 result = sdk.torrents.get_torrent_cached_availability(
     hash=["abc123...", "def456..."],
@@ -263,15 +353,21 @@ GET /v1/api/torrents/exportdata?torrent_id=123&type=magnet
 GET /v1/api/torrents/exportdata?torrent_id=123&type=file  # Returns .torrent file
 ```
 
-### Magnet to Torrent File
-
-```bash
-POST /v1/api/torrents/magnettofile
-```
-
 ---
 
 ## Usenet Service
+
+⚠️ **PRO PLAN ONLY** - Will fail with error on Free/Essential/Standard plans.
+
+### Pre-Flight Check
+
+```python
+user = sdk.user.get_user_data()
+if user.plan not in ["pro", "premium"]:
+    print("ERROR: Usenet requires Pro plan")
+    print(f"Current plan: {user.plan}")
+    return
+```
 
 ### Create Usenet Download
 
@@ -292,7 +388,12 @@ Content-Type: multipart/form-data
 | `add_only_if_cached` | boolean | Only add if cached (default: false) |
 
 ```python
-result = sdk.usenet.create_usenet_download(link="https://.../file.nzb")
+# Check plan first
+user = sdk.user.get_user_data()
+if user.plan == "pro":
+    result = sdk.usenet.create_usenet_download(link="https://.../file.nzb")
+else:
+    print("Usenet requires Pro plan")
 ```
 
 **Async:** `POST /v1/api/usenet/asynccreateusenetdownload`
@@ -333,6 +434,8 @@ GET /v1/api/usenet/requestdl?token=APIKEY&usenet_id=123&file_id=0&zip_link=false
 
 ## Web Downloads Service
 
+Works on all plans. Premium hosters may require Pro for best speeds.
+
 ### Create Web Download
 
 ```bash
@@ -359,7 +462,7 @@ result = sdk.web_downloads_debrid.create_web_download(link="https://example.com/
 GET /v1/api/webdl/hosters
 ```
 
-Returns list of supported file hosters.
+Returns list of supported file hosters. Premium hosters marked separately.
 
 ---
 
@@ -372,6 +475,12 @@ GET /v1/api/queued/getqueued?id=&type=torrent&bypass_cache=false&offset=0&limit=
 ```
 
 **Types:** `torrent`, `usenet`, `webdl`
+
+```python
+# Check how many items are waiting (free plan optimization)
+queued = sdk.queued.get_queued_download_list()
+print(f"{len(queued.data)} items in queue")
+```
 
 ### Control Queued
 
@@ -399,13 +508,11 @@ GET /v1/api/user/me?settings=false
 
 ```python
 result = sdk.user.get_user_data(settings=True)
-```
-
-### Referrals
-
-```bash
-POST /v1/api/user/addreferral?referral=CODE
-GET /v1/api/user/referraldata
+# Key fields:
+# - result.plan: "free", "essential", "standard", "pro"
+# - result.active_downloads: Current active count
+# - result.max_downloads: Plan limit
+# - result.storage_used: Bytes used
 ```
 
 ### Subscriptions & Transactions
@@ -416,11 +523,11 @@ GET /v1/api/user/transactions
 GET /v1/api/user/transaction/pdf?transaction_id=xyz
 ```
 
-### Device Authorization (OAuth2 Device Flow)
-
-```bash
-GET /v1/api/user/auth/device/start?app=MyApp
-POST /v1/api/user/auth/device/token
+**Check subscription status:**
+```python
+subs = sdk.user.get_subscriptions()
+for sub in subs.data:
+    print(f"Plan: {sub.plan}, Status: {sub.status}, Expires: {sub.expires}")
 ```
 
 ---
@@ -455,22 +562,10 @@ POST /v1/api/rss/controlrss
 
 **Operations:** `delete`, `pause`, `resume`
 
-### Modify RSS Feed
-
-```bash
-POST /v1/api/rss/modifyrss
-```
-
 ### Get RSS Feeds
 
 ```bash
 GET /v1/api/rss/getfeeds?id=
-```
-
-### Get RSS Feed Items
-
-```bash
-GET /v1/api/rss/getfeeditems?rss_feed_id=123
 ```
 
 ---
@@ -495,83 +590,81 @@ POST /v1/api/integration/googledrive
 }
 ```
 
-### Upload to Dropbox
-
-```bash
-POST /v1/api/integration/dropbox
-```
-
-```json
-{
-  "id": 123,
-  "dropbox_token": "DROPBOX_TOKEN"
-}
-```
-
-### Upload to OneDrive
-
-```bash
-POST /v1/api/integration/onedrive
-```
-
-### Upload to GoFile
-
-```bash
-POST /v1/api/integration/gofile
-```
-
-Optional: `gofile_token` for authenticated uploads.
-
-### Upload to 1Fichier
-
-```bash
-POST /v1/api/integration/1fichier
-```
-
-### Upload to Pixeldrain
-
-```bash
-POST /v1/api/integration/pixeldrain
-```
-
 ### Manage Transfer Jobs
 
 ```bash
 GET /v1/api/integration/jobs                 # List all jobs
 GET /v1/api/integration/job/{job_id}         # Get job status
 DELETE /v1/api/integration/job/{job_id}      # Cancel job
-GET /v1/api/integration/jobs/{hash}          # Get jobs by hash
+```
+
+**Monitor upload progress:**
+```python
+job = sdk.integrations.get_job_status(job_id=123)
+print(f"Progress: {job.data.progress}%")
 ```
 
 ---
 
-## Notifications Service
+## Performance Optimization
 
-### Get Notifications
+### For Free/Lower Plans
 
-```bash
-GET /v1/api/notifications/mynotifications    # JSON format
-GET /v1/api/notifications/rss?token=APIKEY   # RSS format
+1. **Always check cache first** before adding:
+```python
+def smart_add_torrent(sdk, magnet_hash):
+    cache = sdk.torrents.get_torrent_cached_availability(hash=[magnet_hash])
+    if magnet_hash in cache.data:
+        return sdk.torrents.create_torrent(magnet=f"magnet:?xt=urn:btih:{magnet_hash}")
+    else:
+        # Not cached - might use slot without success
+        return {"success": False, "error": "NOT_CACHED"}
 ```
 
-### Clear Notifications
-
-```bash
-POST /v1/api/notifications/clear             # Clear all
-POST /v1/api/notifications/clear/{id}        # Clear specific
+2. **Monitor slot usage**:
+```python
+def get_available_slots(sdk):
+    user = sdk.user.get_user_data()
+    torrents = sdk.torrents.get_torrent_list()
+    active = len([t for t in torrents.data if t.download_state == "downloading"])
+    return user.max_downloads - active
 ```
 
-### Test Notification
+3. **Use queue for overflow**:
+```python
+# If slots full, add as_queued=True
+if get_available_slots(sdk) == 0:
+    result = sdk.torrents.create_torrent(magnet=magnet, as_queued=True)
+```
 
-```bash
-POST /v1/api/notifications/test              # Rate limited: 1/min
+### Batch Operations
+
+```python
+# Batch cache checks (max 100 hashes)
+hashes = ["hash1", "hash2", ..., "hash100"]
+cache = sdk.torrents.get_torrent_cached_availability(hash=hashes)
+```
+
+### Polling Strategy
+
+```python
+import time
+
+def wait_for_cached(sdk, torrent_id, timeout=300):
+    """Wait for torrent to become cached."""
+    start = time.time()
+    while time.time() - start < timeout:
+        torrents = sdk.torrents.get_torrent_list()
+        for t in torrents.data:
+            if t.id == torrent_id and t.download_state == "cached":
+                return t
+        time.sleep(10)
+    return None
 ```
 
 ---
 
 ## Using the CLI Script
-
-Use the provided script for easy API calls:
 
 ```bash
 # Get API status
@@ -588,12 +681,6 @@ python3 ~/clawd/skills/torbox/scripts/torbox-api.py torrents cache --hashes "has
 
 # Request download link
 python3 ~/clawd/skills/torbox/scripts/torbox-api.py torrents download --id 123 --token YOUR_TOKEN
-
-# Create web download
-python3 ~/clawd/skills/torbox/scripts/torbox-api.py webdl create --link "https://..." --token YOUR_TOKEN
-
-# List usenet downloads
-python3 ~/clawd/skills/torbox/scripts/torbox-api.py usenet list --token YOUR_TOKEN
 
 # Set token via environment variable
 export TORBOX_TOKEN="your_token"
@@ -628,6 +715,9 @@ All responses follow this structure:
 - `VALIDATION_ERROR` - Invalid parameters
 - `AUTHENTICATION_FAILED` - Invalid or missing token
 - `RATE_LIMITED` - Too many requests
+- `PLAN_RESTRICTION` - Feature requires higher plan
+- `SLOTS_FULL` - Concurrent download limit reached
+- `FILE_TOO_LARGE` - Exceeds plan size limit
 
 ---
 
@@ -636,21 +726,31 @@ All responses follow this structure:
 - Test notification: 1 per minute
 - Cache checks: No explicit limit, but be reasonable
 - Download requests: Metered based on plan
+- General API: Be polite, don't hammer
 
 ---
 
-## Response Models Reference
+## Troubleshooting
 
-Key response types you can expect:
+### "Usenet not working"
+- Check plan: `user.plan` must be "pro"
+- Non-Pro plans get permission errors
 
-| Model | Description |
-|-------|-------------|
-| `GetTorrentListOkResponse` | Torrent list with download states |
-| `CreateTorrentOkResponse` | Created torrent details |
-| `RequestDownloadLinkOkResponse` | Download URL or permalink |
-| `GetTorrentCachedAvailabilityOkResponse` | Cache availability |
-| `GetUsenetListOkResponse` | Usenet download list |
-| `GetWebDownloadListOkResponse` | Web download list |
-| `GetUserDataOkResponse` | User account info |
-| `GetNotificationFeedOkResponse` | Notifications list |
-| `GetAllJobsOkResponse` | Cloud upload jobs |
+### "Cannot add more torrents"
+- Check active downloads vs plan limit
+- Use `as_queued=True` or delete old torrents
+- Check: `len(active_downloads) >= max_downloads`
+
+### "Download link expired"
+- Links valid for 3 hours to START download
+- Request new link or use permalinks with `redirect=true`
+
+### "File too large"
+- Essential/Standard: 200GB max
+- Pro: 500GB max
+- Free: Very limited
+
+### Slow speeds
+- Check plan speed tier
+- Use speedtest endpoint to verify CDN
+- Try different region: `?user_ip=` or different CDN
