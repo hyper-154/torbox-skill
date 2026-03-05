@@ -2,7 +2,7 @@
 name: torbox
 description: Interact with Torbox API for torrents, Usenet, web downloads, search engines, streaming, and cloud integrations using pure HTTP API calls. This is a modular skill - load only the sections you need. See the routing guide below.
 ---
-
+# IMPORTANT: Do not assume any features or limiations without checking relevant files.
 # Torbox API Skill (Modular)
 
 Pure HTTP API for managing torrents, Usenet, web downloads, search engines, streaming, and cloud integrations through Torbox. No SDK dependencies required.
