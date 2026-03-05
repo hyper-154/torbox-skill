@@ -102,7 +102,7 @@ IF user.plan == "pro":
     - ✅ CAN use Usenet endpoints (unlimited)
     - 30 days seed time
     - 1TB max file size
-    - ✅ Web Player enabled
+    - ✅ Web Player enabled (stream cached torrents in browser, no apps needed)
     - ✅ Unlimited RSS feeds
     - 80Gbps speed
 ```
@@ -816,6 +816,8 @@ curl -H "Authorization: Bearer YOUR_TOKEN" "https://api.torbox.app/v1/api/rss/ge
 ---
 
 ## Streaming Service
+
+⚠️ **PRO PLAN ONLY** — The Web Player feature (in-browser streaming) requires Pro plan. The streaming endpoints work on all plans, but the Web Player UI is Pro-only.
 
 ### Create Stream
 
